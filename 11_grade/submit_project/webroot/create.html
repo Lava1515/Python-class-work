@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+</head>
+<body class="disable_text_selection" oncontextmenu="return false;" >
+    <div style="display: flex;">
+        <h1>Please enter game Name:</h1>
+        <input type="text" class="Name_input" id="Name_input" onkeyup="document.getElementById('N_game').innerHTML = this.value;">
+    </div>
+
+    <div style="display: flex;"  >
+        <h1 style="margin-right: 5px;">The game name is: <h1>
+        <H1 id="N_game"></H1>
+    </div>
+
+    <div id="Div_btns">
+        <button id="addbtn" class="look ">Add question <i class="fa fa-plus-circle"></i></button>
+        <button class="sub_PIN" id="Submit">Submit</button>
+        <h3 id="alert"></h3>
+        <div class="relative"><a href="index.html" class="Bottom_right" >Back to home page</a></div> 
+    </div>
+
+    <script src="create.js"></script>
+</body>
+</html>
