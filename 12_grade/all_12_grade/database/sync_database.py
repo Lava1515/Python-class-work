@@ -29,15 +29,15 @@ class FileManager(DataBase):
     def __init__(self):
         self.file_path = "data.json"
         D_data = {}
-        try:
-            with open(self.file_path) as f:
-                D_data = json.load(f)
-        except Exception:
-            pass
         super().__init__(D_data)
         self.T_lock = threading.Lock
 
     def set_value(self, key_, data_):
+        try:
+            with open(self.file_path) as f:
+                self.D_data = json.load(f)
+        except Exception:
+            pass
         if path.isfile(self.file_path) is False:
             raise Exception("File not found")
         super().set_value(key_, data_)
@@ -47,6 +47,11 @@ class FileManager(DataBase):
                       separators=(',', ': '))
 
     def delete_value(self, key_):
+        try:
+            with open(self.file_path) as f:
+                self.D_data = json.load(f)
+        except Exception:
+            pass
         if path.isfile(self.file_path) is False:
             raise Exception("File not found")
         super().delete_value(key_)
