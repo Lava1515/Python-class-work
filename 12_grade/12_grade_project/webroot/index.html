@@ -3,34 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>12 grade proj</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Chat Application</title>
 </head>
 <body>
-    <div id="box_wrap">
-      <div class="login-box">
-          <h2>Login</h2>
-          <form>
-            <div class="user-box">
-              <input type="text" name="" required="">
-              <label>Username</label>
-            </div>
-            <div class="user-box">
-              <input type="password" name="" required="">
-              <label>Password</label>
-            </div>
-            <a href="" class="hover"">
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-              Submit
-            </a>
-          </form>
-          <button class="hover register_sign_up">register</button>
-        </div>
-    </div>
+    <div id="chat-box" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; height: 200px; overflow-y: scroll;"></div>
+    <form id="message-form">
+        <input type="text" id="message-input" placeholder="Type your message...">
+        <button type="submit">Send</button>
+    </form>
 
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const messageForm = document.getElementById('message-form');
+        const messageInput = document.getElementById('message-input');
+
+        messageForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const message = messageInput.value.trim();
+            if (message !== '') {
+                sendMessage(message);
+                messageInput.value = '';
+            }
+        });
+
+        function sendMessage(message) {
+            const chatId = 'chat1';  // Change this to the desired chat ID
+            fetch(`/messages?chat_id=${chatId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 'chat_id': chatId, 'content': message })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Message sent successfully:', data);
+                })
+                .catch(error => {
+                    console.error('Error sending message:', error);
+                });
+        }
+
+        function displayMessage(message) {
+            const messageElement = document.createElement('p');
+            messageElement.textContent = message;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the bottom
+        }
+
+        function fetchMessages() {
+            const chatId = 'chat1';  // Change this to the desired chat ID
+            fetch(`/messages?chat_id=${chatId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Clear the chat box before displaying new messages
+                    chatBox.innerHTML = '';
+                    data.forEach(message => displayMessage(message.content));
+                })
+                .catch(error => {
+                    console.error('Error fetching messages:', error);
+                });
+        }
+
+        // Fetch and display messages when the page loads
+        fetchMessages();
+
+        // Set up automatic message refresh every 0.5 seconds (adjust as needed)
+        setInterval(fetchMessages, 500);
+    </script>    
 </body>
 </html>
-

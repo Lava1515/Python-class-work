@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 from os import path
 import multiprocessing
 
@@ -63,6 +64,9 @@ class FileManager(DataBase):
 
 class Commands:
     def __init__(self, type_):
+        """
+        :param type_:have to get "thread" or "multi"
+        """
         self.lock = None
         self._semaphore = None
         self.max_readers = 10
@@ -74,9 +78,7 @@ class Commands:
             self.lock = multiprocessing.Lock()
             self._semaphore = multiprocessing.Semaphore(self.max_readers)
 
-    def add_data(self):
-        key = input("the you want to add")
-        data = input("the data you want to add to the key")
+    def add_data(self, key=None, data=None):
         self.lock.acquire()
         for _ in range(self.max_readers):
             self._semaphore.acquire()
@@ -85,8 +87,7 @@ class Commands:
         for _ in range(self.max_readers):
             self._semaphore.release()
 
-    def get_data(self):
-        key = input("the you want to get")
+    def get_data(self, key=None):
         self.lock.acquire()
         for _ in range(self.max_readers):
             self._semaphore.acquire()
@@ -96,8 +97,7 @@ class Commands:
             self._semaphore.release()
         return x
 
-    def delete_data(self):
-        key = input("the you want to remove")
+    def delete_data(self, key=None):
         self.lock.acquire()
         for _ in range(self.max_readers):
             self._semaphore.acquire()
@@ -108,6 +108,12 @@ class Commands:
         for _ in range(self.max_readers):
             self._semaphore.release()
 
+
+class ThreadManger(Commands):
+    def __init__(self):
+        super().__init__("thread")
+        self.threads_ = []
+
     def commands(self):
         running = True
         while running:
@@ -115,22 +121,20 @@ class Commands:
                             "[Add | Get | Remove | quit]")
 
             if command.lower() == "add":
-                self.add_data()
+                key = input("the key you want to add")
+                data = input("the data you want to add to the key")
+                self.add_data(key, data)
 
             elif command.lower() == "get":
-                print(self.get_data())
+                key = input("the key you want to get")
+                print(self.get_data(key))
 
             elif command.lower() == "remove":
-                self.delete_data()
+                key = input("the key you want to remove")
+                self.delete_data(key)
 
             elif command.lower() == "quit":
                 running = False
-
-
-class ThreadManger(Commands):
-    def __init__(self):
-        super().__init__("thread")
-        self.threads_ = []
 
     def start_threads(self):
         for i in range(10):
@@ -141,23 +145,45 @@ class ThreadManger(Commands):
             t.join()
 
 
-class MultiManger(Commands):
+class MultiManger:
     def __init__(self):
-        super().__init__("multi")
         self.multi_ = []
+        self.command = None
+        self.key_ = None
+        self.data_ = None
 
-    def start_process(self):
+    def commands(self):
+        c = Commands("multi")
+        print(self.command)
+        if self.command.lower() == "add":
+            c.add_data(self.key_, self.data_)
+
+        elif self.command.lower() == "get":
+            print(c.get_data(self.key_))
+
+        elif self.command.lower() == "remove":
+            c.delete_data(self.key_)
+
+        elif self.command.lower() == "quit":
+            running = False
+
+    def start_process(self, command=None, key=None, data=None):
         for i in range(10):
+            if command is None:
+                self.command = input("Enter the command you want to do from the list "
+                            "[Add | Get | Remove | quit]")
+            if key is None:
+                self.key_ = input("the key you want to add")
+            if data is None:
+                self.data_ = input("the data you want to add to the key")
             p = multiprocessing.Process(target=self.commands, daemon=True)
-            self.multi_.append(p)
-        for p in self.multi_:
             p.start()
             p.join()
 
 
 def main():
-    thm = ThreadManger()
-    thm.start_threads()
+    thm = MultiManger()
+    thm.start_process()
 
 
 if __name__ == "__main__":
