@@ -1,8 +1,10 @@
 const chatBox = document.getElementById('chat-box');
 const submit = document.getElementById('submit');
 const messageInput = document.getElementById('message-input');
+const add_chat = document.getElementById('add_chat')
+var chat_id = 0
 
-submit.addEventListener('click', function (event) {
+submit.onclick = function (event) {
     console.log("click")
     event.preventDefault();
     const message = messageInput.value.trim();
@@ -10,7 +12,14 @@ submit.addEventListener('click', function (event) {
         sendMessage(message);
         messageInput.value = '';
     }
-});
+};
+
+add_chat.onclick = function() {
+    chat_id = Math.floor(Math.random() * 10000000) + 1000000;
+    console.log(chat_id)
+    ":todo check if id already taken if not creat chat"
+};
+
 
 function sendMessage(message) {
     const chatId = 'chat1';  // Change this to the desired chat ID
@@ -60,6 +69,7 @@ function fetchMessages() {
             console.error('Error fetching messages:', error);
         });
 }
+
 
 // Fetch and display messages when the page loads
 fetchMessages();

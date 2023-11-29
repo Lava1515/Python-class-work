@@ -52,7 +52,7 @@ class ChatServer:
                 if path == '/':
                     path = "/index.html"
                     self.send_response(client_socket, path, "ok")
-                else:
+                elif path != "/" and "?" not in path:
                     self.send_response(client_socket, path, "ok")
                 if '/messages' in path:
                     chat_id = path.split('?')[1].split('=')[1] if '?' in path else 'default'
@@ -76,7 +76,7 @@ class ChatServer:
 
                 self.broadcast_new_messages(chat_id, message)
 
-                self.response = f"HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{'success': true}"
+                self.response = f"HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{'success':true}"
 
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
@@ -100,7 +100,9 @@ class ChatServer:
 
     def send_response(self, client_socket, path, status_code):
         type_ = path.split(".")[-1]
+        print("origin", path)
         path = "webroot/" + path.replace("/", "")
+        print("path", path)
         try:
             with open(path, 'r') as file:
                 content = file.read()
