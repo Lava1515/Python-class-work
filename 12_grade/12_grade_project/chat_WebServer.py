@@ -2,6 +2,22 @@ import socket
 import json
 import threading
 
+"""Http globals"""
+
+WEB_ROOT = "webroot"
+HTTP = "HTTP/1.1\r\n"
+STRINGS = {"up": "/uploads/", "400": "/images/400.png", "404": "/images/404.png", "403": "/images/403.png",
+           "500": "/images/403.png"}
+CONTENT_TYPE = "Content-Type: "
+CONTENT_LENGTH = "Content-Length: "
+STATUS_CODES = {"ok": "200 OK\r\n", "bad": "400 BAD REQUEST\r\n", "not found": "404 NOT FOUND\r\n",
+                "forbidden": "403 FORBIDDEN\r\n", "moved": "302 FOUND\r\n",
+                "server error": "500 INTERNAL SERVER ERROR\r\n"}
+FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "css": "text/css\r\n",
+             "js": "text/javascript; charset=UTF-8\r\n", "txt": "text/plain\r\n", "ico": "image/x-icon\r\n"
+             , "gif": "image/jpeg\r\n", "png": "image/png\r\n", "svg": "image/svg+xml",
+             "json": "application/json\r\n"}
+
 
 class ChatServer:
     def __init__(self):
@@ -9,20 +25,6 @@ class ChatServer:
         self.chats = {}
         self.clients = set()
         self.response = ""
-        self.WEB_ROOT = "webroot"
-        self.HTTP = "HTTP/1.1\r\n"
-        self.STRINGS = {"up": "/uploads/", "400": "/images/400.png", "404": "/images/404.png", "403": "/images/403.png",
-                   "500": "/images/403.png"}
-        self.CONTENT_TYPE = "Content-Type: "
-        self.CONTENT_LENGTH = "Content-Length: "
-        self.STATUS_CODES = {"ok": "200 OK\r\n", "bad": "400 BAD REQUEST\r\n", "not found": "404 NOT FOUND\r\n",
-                "forbidden": "403 FORBIDDEN\r\n", "moved": "302 FOUND\r\n",
-                "server error": "500 INTERNAL SERVER ERROR\r\n"}
-
-        self.FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "css": "text/css\r\n",
-                          "js": "text/javascript; charset=UTF-8\r\n", "txt": "text/plain\r\n", "ico": "image/x-icon\r\n"
-                          , "gif": "image/jpeg\r\n", "png": "image/png\r\n", "svg": "image/svg+xml",
-                          "json": "application/json\r\n"}
 
     def read_file(self, file_name):
         """ Read A File """
@@ -44,11 +46,10 @@ class ChatServer:
     def handle_client(self, client_socket):
         self.clients.add(client_socket)
         try:
-            request = client_socket.recv(1024).decode('utf-8')
-
+            request = client_socket.recv(1024).decode()
+            data = request.split("\r\n\r\n")[-1]
             method, path, *_ = request.split()
-            print("the path", path)
-            if "GET" in method :
+            if "GET" in method:
                 if path == '/':
                     path = "/index.html"
                     self.send_response(client_socket, path, "ok")
@@ -58,7 +59,11 @@ class ChatServer:
                     chat_id = path.split('?')[1].split('=')[1] if '?' in path else 'default'
                     self.load_chat_messages(chat_id)
                     chat_messages = self.chats.get(chat_id, [])
-                    self.response = f"HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{json.dumps(chat_messages)}"
+                    data = json.dumps(chat_messages)
+                    self.response = (HTTP + STATUS_CODES["ok"]
+                                     + CONTENT_TYPE + FILE_TYPE["json"]
+                                     + CONTENT_LENGTH + str(len(data))
+                                     + "\r\n\r\n" + data)
 
             elif 'POST' in method:
                 if '/messages' in path:
@@ -69,19 +74,42 @@ class ChatServer:
                     chat_id = message.get('chat_id', 'default')
                     if chat_id not in self.chats:
                         self.chats[chat_id] = []
+                    message_number = len(self.chats[chat_id]) + 1
+                    self.chats[chat_id].append({'number': message_number, 'content': message['content']})
+                    self.update_messages_file(chat_id)
+                    self.broadcast_new_messages(chat_id, message)
+                    res_data = json.dumps({"success": "true"})
+                    self.response = (HTTP + STATUS_CODES["ok"]
+                                     + CONTENT_TYPE + FILE_TYPE["json"]
+                                     + CONTENT_LENGTH + str(len({res_data}))
+                                     + "\r\n\r\n" + res_data)
 
-                message_number = len(self.chats[chat_id]) + 1
-                self.chats[chat_id].append({'number': message_number, 'content': message['content']})
-                self.update_messages_file(chat_id)
-
-                self.broadcast_new_messages(chat_id, message)
-
-                self.response = f"HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{'success':true}"
+                if "check_id" in path:
+                    id_ = data.split(":")[-1].replace("}", "")
+                    print(id)
+                    with open("chat_ids.json", 'r') as file:
+                        try:
+                            id_database = json.load(file)
+                        except json.decoder.JSONDecodeError:
+                            id_database = {}
+                    if id_ in id_database:
+                        print("false")
+                        print(json.dumps({"success": "false"}))
+                        res_data = json.dumps({"success": "false"})
+                        self.response = (HTTP + STATUS_CODES["ok"]
+                                         + CONTENT_TYPE + FILE_TYPE["json"]
+                                         + CONTENT_LENGTH + str(len(res_data))
+                                         + "\r\n\r\n" + res_data)
+                    else:
+                        id_database[id_] = ""
+                        with open("chat_ids.json", 'w') as file_:
+                            print(id_)
+                            json.dump(id_database, file_)
 
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
         finally:
-            client_socket.send(self.response.encode('utf-8'))
+            client_socket.send(self.response.encode())
             client_socket.close()
             self.clients.remove(client_socket)
 
@@ -89,7 +117,7 @@ class ChatServer:
         for client in self.clients:
             if client != self.server_socket:
                 try:
-                    client.send(f"New message in chat '{chat_id}': {new_message['content']}".encode('utf-8'))
+                    client.send(f"New message in chat '{chat_id}': {new_message['content']}".encode())
                 except Exception as e:
                     print(f"Error broadcasting message to a client: {e}")
 
@@ -98,7 +126,8 @@ class ChatServer:
         with open(filename, 'w') as file:
             json.dump(self.chats[chat_id], file)
 
-    def send_response(self, client_socket, path, status_code):
+    @staticmethod
+    def send_response(client_socket, path, status_code):
         type_ = path.split(".")[-1]
         print("origin", path)
         path = "webroot/" + path.replace("/", "")
@@ -106,16 +135,15 @@ class ChatServer:
         try:
             with open(path, 'r') as file:
                 content = file.read()
-                content_type = self.CONTENT_TYPE + self.FILE_TYPE[type_]
-                content_length = self.CONTENT_LENGTH + str(len(content.encode())) + "\r\n"
-                http_response = self.HTTP + self.STATUS_CODES[status_code] + content_type + content_length + "\r\n"
+                content_type = CONTENT_TYPE + FILE_TYPE[type_]
+                content_length = CONTENT_LENGTH + str(len(content.encode())) + "\r\n"
+                http_response = HTTP + STATUS_CODES[status_code] + content_type + content_length + "\r\n"
                 http_response = http_response.encode() + content.encode()
-                # response = f"{self.HTTP}{self.STATUS_CODES["ok"]}Content-type:{self.FILE_TYPE[path.split(".")[-1]]}\r\n\r\n{content}"
                 client_socket.send(http_response)
         except FileNotFoundError as e:
             print(e)
             response = "HTTP/1.1 404 Not Found\r\n\r\n"
-            client_socket.send(response.encode('utf-8'))
+            client_socket.send(response.encode())
 
     def start_server(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

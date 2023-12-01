@@ -14,12 +14,35 @@ submit.onclick = function (event) {
     }
 };
 
-add_chat.onclick = function() {
+add_chat.onclick = send_add_chat
+
+function send_add_chat() {
     chat_id = Math.floor(Math.random() * 10000000) + 1000000;
+    // chat_id = 10
     console.log(chat_id)
     ":todo check if id already taken if not creat chat"
+    fetch(`/check_id`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 'chat_id': chat_id})
+    })
+    .then(response => {
+        console.log(response)
+        return response.json();
+    })
+    .then(data => {
+        console.log('Message sent successfully:', data);
+        if(data["success"] == "false"){
+            send_add_chat()
+            console.log("the id aleady acupied")
+        }
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+    });
 };
-
 
 function sendMessage(message) {
     const chatId = 'chat1';  // Change this to the desired chat ID
