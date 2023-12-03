@@ -1,0 +1,42 @@
+#chats{
+    position: absolute;
+    right: 0%;
+    top:0%;
+    background-color: rgb(67, 62, 62);
+    width: 30%;
+    height: 100vh;
+    overflow-y: scroll;
+}
+
+#chat-box{
+    border: 1px solid #ccc; padding: 10px; 
+    margin-bottom: 10px;
+    height: 85vh;
+    overflow-y: scroll;
+}
+
+#add_chat{
+    position: absolute;
+    right: 0%;
+    bottom: 0%;
+}
+
+.add_chat_popup{
+    width: 50px;
+    height: 50px;
+    opacity: 0;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    transition: all 2s ease-in-out;
+}
+
+.add_chat_popup_hover{
+    background-color: red   ;
+    opacity: 1;
+    width: 150px;
+    height: 150px;
+    bottom: 50%;
+    right: 60%;
+    transform: translate(50%, 50%);
+}

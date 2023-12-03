@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+
+    .moving-element {
+      width: 50px;
+      height: 50px;
+      background-color: #3498db;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      transition: all 2s ease-in-out;
+    }
+
+    .move {
+      bottom: 50%;
+      right: 50%;
+      transform: translate(50%, 50%);
+    }
+  </style>
+</head>
+<body>
+
+  <button onclick="moveElement()">Move Element</button>
+  <div id="element" class="moving-element"></div>
+
+  <script>
+    function moveElement() {
+      var element = document.getElementById('element');
+      element.classList.add('move');
+
+      // Add an event listener for the end of the transition
+      element.addEventListener('transitionend', function() {
+        // Check if the element is in the center and hide it
+        if (element.classList.contains('move')) {
+          element.style.opacity = 0;
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

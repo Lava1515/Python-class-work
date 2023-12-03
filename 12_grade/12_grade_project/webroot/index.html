@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="index.css">
     <title>Chat Application</title>
 </head>
 <body>
-    <button id="add_chat">add chat</button>
-    <div id="chat-box" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; height: 200px; overflow-y: scroll;"></div>
+    <i class="fa-solid fa-message fa-flip-horizontal"></i> 
+    <div id="chats"></div>
+    <div class="add_chat_popup" id="add_chat_popup"></div>
+    <button class="w3-button w3-xlarge w3-circle w3-green w3-card-4" id ="add_chat">+</button>    <div id="chat-box"></div>
     <input type="text" id="message-input" placeholder="Type your message...">
     <button id="submit">Send</button>
 

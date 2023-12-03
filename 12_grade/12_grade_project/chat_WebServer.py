@@ -67,11 +67,12 @@ class ChatServer:
 
             elif 'POST' in method:
                 if '/messages' in path:
-                    content_length = int(request.split('Content-Length: ')[1].split('\r\n')[0])
-                    content = "{" + request.split("{")[-1].split("}")[0] + "}"
-                    print(f"Received content: {content}")
-                    message = json.loads(content)
-                    chat_id = message.get('chat_id', 'default')
+                    print("BRUH")
+                    print(data)
+                    print(f"Received content: {data}")
+                    message = json.loads(data)
+                    chat_id = message["chat_id"]
+                    print("chat id", chat_id)
                     if chat_id not in self.chats:
                         self.chats[chat_id] = []
                     message_number = len(self.chats[chat_id]) + 1
@@ -114,6 +115,9 @@ class ChatServer:
             self.clients.remove(client_socket)
 
     def broadcast_new_messages(self, chat_id, new_message):
+        """
+        :todo need to do it per group...
+        """
         for client in self.clients:
             if client != self.server_socket:
                 try:

@@ -14,9 +14,20 @@ submit.onclick = function (event) {
     }
 };
 
-add_chat.onclick = send_add_chat
+add_chat.onclick = function() {
+    // get_chat_id()
+    // create_chat()
+    var element = document.getElementById("add_chat_popup");
+    element.className += (" add_chat_popup_hover");
+}
 
-function send_add_chat() {
+function create_chat(){
+    const chat = document.createElement("div");
+    chat.innerHTML = "chat1"
+    document.getElementById("chats").appendChild(chat);
+}
+
+function get_chat_id() {
     chat_id = Math.floor(Math.random() * 10000000) + 1000000;
     // chat_id = 10
     console.log(chat_id)
@@ -35,7 +46,7 @@ function send_add_chat() {
     .then(data => {
         console.log('Message sent successfully:', data);
         if(data["success"] == "false"){
-            send_add_chat()
+            get_chat_id()
             console.log("the id aleady acupied")
         }
     })
@@ -46,25 +57,27 @@ function send_add_chat() {
 
 function sendMessage(message) {
     const chatId = 'chat1';  // Change this to the desired chat ID
-    fetch(`/messages?chat_id=${chatId}`, {
+    fetch(`/messages?chatid=${chatId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 'chat_id': chatId, 'content': message })
     })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Message sent successfully:', data);
-        })
-        .catch(error => {
-            console.error('Error sending message:', error);
-        });
+    .then(response => {
+        console.log(response)
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data)
+        console.log('Message sent successfully:', data);
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+    });
 }
 
 function displayMessage(message) {
