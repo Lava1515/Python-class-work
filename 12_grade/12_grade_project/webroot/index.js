@@ -2,6 +2,9 @@ const chatBox = document.getElementById('chat-box');
 const submit = document.getElementById('submit');
 const messageInput = document.getElementById('message-input');
 const add_chat = document.getElementById('add_chat')
+const x_btn = document.createElement("button")
+const submit_chat = document.createElement("button");
+const input = document.createElement("input");
 var chat_id = 0
 
 submit.onclick = function (event) {
@@ -15,29 +18,60 @@ submit.onclick = function (event) {
 };
 
 add_chat.onclick = function() {
-    // get_chat_id()
-    // create_chat()
     var element = document.getElementById("add_chat_popup");
     element.className += (" add_chat_popup_hover");
+    while (element.firstChild) {
+        element.removeChild(element.firstChild);
+    }
+    all_addchat()
 }
 
-function create_chat(){
+x_btn.onclick = close_popup
+
+submit_chat.onclick = function(){
+    console.log("bruh")
+    get_chat_id(input.value)
+    create_chat(input.value)
+    close_popup()
+}
+
+function close_popup(){
+    var element = document.getElementById("add_chat_popup");
+    element.className = ("add_chat_popup");
+    const add_chat = document.getElementById("add_chat_popup")
+    while (add_chat.firstChild) {
+        add_chat.removeChild(add_chat.firstChild);
+    }
+    input.value = ""
+}
+
+function all_addchat(){
+    const add_chat = document.getElementById("add_chat_popup")
+    x_btn.innerHTML = "x"
+    x_btn.className = "x_btn"
+    add_chat.appendChild(x_btn)
+
+    input.setAttribute("type", "text"); 
+    input.placeholder = "Group name:"
+    input.className = "input_chat"
+    add_chat.appendChild(input)
+
+    submit_chat.innerHTML = "submit"
+    submit_chat.className = "submit_chat"
+    add_chat.appendChild(submit_chat)
+}
+
+function create_chat(chatname){
+    console.log("create chat")
     const chat = document.createElement("div");
-    chat.innerHTML = "chat1"
+    chat.innerHTML = chatname
+    chat.className = "allchats"
     document.getElementById("chats").appendChild(chat);
 }
 
-function get_chat_id() {
-    chat_id = Math.floor(Math.random() * 10000000) + 1000000;
-    // chat_id = 10
-    console.log(chat_id)
-    ":todo check if id already taken if not creat chat"
-    fetch(`/check_id`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 'chat_id': chat_id})
+async function get_chat_id(name) {
+    await fetch(`/check_id?chat_name=${name}`, {
+        method: 'Get',
     })
     .then(response => {
         console.log(response)
@@ -45,10 +79,7 @@ function get_chat_id() {
     })
     .then(data => {
         console.log('Message sent successfully:', data);
-        if(data["success"] == "false"){
-            get_chat_id()
-            console.log("the id aleady acupied")
-        }
+        return data
     })
     .catch(error => {
         console.error('Error sending message:', error);
@@ -83,6 +114,7 @@ function sendMessage(message) {
 function displayMessage(message) {
     const messageElement = document.createElement('p');
     messageElement.textContent = message;
+    messageElement.className = "messageElement"
     chatBox.appendChild(messageElement);
     chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the bottom
 }

@@ -1,3 +1,4 @@
+import random
 import socket
 import json
 import threading
@@ -53,9 +54,7 @@ class ChatServer:
                 if path == '/':
                     path = "/index.html"
                     self.send_response(client_socket, path, "ok")
-                elif path != "/" and "?" not in path:
-                    self.send_response(client_socket, path, "ok")
-                if '/messages' in path:
+                elif '/messages' in path:
                     chat_id = path.split('?')[1].split('=')[1] if '?' in path else 'default'
                     self.load_chat_messages(chat_id)
                     chat_messages = self.chats.get(chat_id, [])
@@ -64,6 +63,33 @@ class ChatServer:
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(data))
                                      + "\r\n\r\n" + data)
+
+                elif "check_id" in path:
+                    check_chat = path.split("?")[-1].split("=")
+                    if check_chat[0] != "chat_name":
+                        return
+                    chat_name = check_chat[-1]
+                    print("get check_id")
+                    id_ = random.randint(1000000, 10000000)
+                    print(id_)
+                    with open("chat_ids.json", 'r') as file:
+                        try:
+                            id_database = json.load(file)
+                        except json.decoder.JSONDecodeError:
+                            id_database = {}
+                    while id_ in id_database:
+                        id_ = random.randint(1000000, 10000000)
+                    id_database[id_] = chat_name
+                    with open("chat_ids.json", 'w') as file_:
+                        json.dump(id_database, file_)
+                    res_data = json.dumps({"the_id": str(id_)})
+                    self.response = (HTTP + STATUS_CODES["ok"]
+                                     + CONTENT_TYPE + FILE_TYPE["json"]
+                                     + CONTENT_LENGTH + str(len(res_data))
+                                     + "\r\n\r\n" + res_data)
+
+                elif path != "/" and "?" not in path:
+                    self.send_response(client_socket, path, "ok")
 
             elif 'POST' in method:
                 if '/messages' in path:
@@ -84,28 +110,6 @@ class ChatServer:
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len({res_data}))
                                      + "\r\n\r\n" + res_data)
-
-                if "check_id" in path:
-                    id_ = data.split(":")[-1].replace("}", "")
-                    print(id)
-                    with open("chat_ids.json", 'r') as file:
-                        try:
-                            id_database = json.load(file)
-                        except json.decoder.JSONDecodeError:
-                            id_database = {}
-                    if id_ in id_database:
-                        print("false")
-                        print(json.dumps({"success": "false"}))
-                        res_data = json.dumps({"success": "false"})
-                        self.response = (HTTP + STATUS_CODES["ok"]
-                                         + CONTENT_TYPE + FILE_TYPE["json"]
-                                         + CONTENT_LENGTH + str(len(res_data))
-                                         + "\r\n\r\n" + res_data)
-                    else:
-                        id_database[id_] = ""
-                        with open("chat_ids.json", 'w') as file_:
-                            print(id_)
-                            json.dump(id_database, file_)
 
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
@@ -133,17 +137,19 @@ class ChatServer:
     @staticmethod
     def send_response(client_socket, path, status_code):
         type_ = path.split(".")[-1]
+        print("type", type_)
         print("origin", path)
-        path = "webroot/" + path.replace("/", "")
+        path = "webroot" + path
         print("path", path)
         try:
-            with open(path, 'r') as file:
+            with open(path, 'rb') as file:
                 content = file.read()
                 content_type = CONTENT_TYPE + FILE_TYPE[type_]
-                content_length = CONTENT_LENGTH + str(len(content.encode())) + "\r\n"
+                content_length = CONTENT_LENGTH + str(len(content)) + "\r\n"
                 http_response = HTTP + STATUS_CODES[status_code] + content_type + content_length + "\r\n"
-                http_response = http_response.encode() + content.encode()
+                http_response = http_response.encode() + content
                 client_socket.send(http_response)
+
         except FileNotFoundError as e:
             print(e)
             response = "HTTP/1.1 404 Not Found\r\n\r\n"
