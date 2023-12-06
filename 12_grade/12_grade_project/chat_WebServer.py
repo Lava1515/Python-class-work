@@ -88,6 +88,21 @@ class ChatServer:
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
 
+                elif '/get_chats' in path:
+                    chats_data = None
+                    with open("chat_ids.json", 'r') as file:
+                        try:
+                            chats_data = json.dumps(json.load(file))
+                            print("chats_data", chats_data)
+                            self.response = (HTTP + STATUS_CODES["ok"]
+                                             + CONTENT_TYPE + FILE_TYPE["json"]
+                                             + CONTENT_LENGTH + str(len(chats_data))
+                                             + "\r\n\r\n" + chats_data)
+                        except Exception as e:
+                            print(e)
+                            with open("chat_ids.json", 'w') as file:
+                                json.dump({}, file)
+                                
                 elif path != "/" and "?" not in path:
                     self.send_response(client_socket, path, "ok")
 

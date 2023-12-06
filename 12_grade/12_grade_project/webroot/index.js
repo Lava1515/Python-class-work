@@ -61,11 +61,11 @@ function all_addchat(){
     add_chat.appendChild(submit_chat)
 }
 
-function create_chat(chatname){
-    console.log("create chat")
+function create_chat(id , chatname){
     const chat = document.createElement("div");
     chat.innerHTML = chatname
     chat.className = "allchats"
+    chat.id = id
     document.getElementById("chats").appendChild(chat);
 }
 
@@ -79,6 +79,27 @@ async function get_chat_id(name) {
     })
     .then(data => {
         console.log('Message sent successfully:', data);
+        return data
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+    });
+};
+
+async function get_chats(name) {
+    await fetch(`/get_chats`, {
+        method: 'Get',
+    })
+    .then(response => {
+        console.log(response)
+        return response.json();
+    })
+    .then(data => {
+        console.log('Message sent successfully:', data);
+        for (const [id, name] of Object.entries(data)) {
+            console.log(id, name);
+            create_chat(id, name)
+        }
         return data
     })
     .catch(error => {
@@ -141,6 +162,7 @@ function fetchMessages() {
 
 // Fetch and display messages when the page loads
 fetchMessages();
+get_chats()
 
 // Set up automatic message refresh every 0.5 seconds (adjust as needed)
 setInterval(fetchMessages, 500);
