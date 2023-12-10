@@ -40,7 +40,7 @@ class ChatServer:
                 self.chats[chat_id] = json.load(file)
         except FileNotFoundError:
             # If the file doesn't exist, create a new one with numbering
-            self.chats[chat_id] = [{'number': i + 1, 'content': f'Message {i + 1}'} for i in range(3)]
+            self.chats[chat_id] = []
             with open(filename, 'w') as file:
                 json.dump(self.chats[chat_id], file)
 
@@ -64,14 +64,43 @@ class ChatServer:
                                      + CONTENT_LENGTH + str(len(data))
                                      + "\r\n\r\n" + data)
 
-                elif "check_id" in path:
-                    check_chat = path.split("?")[-1].split("=")
-                    if check_chat[0] != "chat_name":
+                elif '/get_chats' in path:
+                    with open("chat_ids.json", 'r') as file:
+                        try:
+                            chats_data = json.dumps(json.load(file))
+                            self.response = (HTTP + STATUS_CODES["ok"]
+                                             + CONTENT_TYPE + FILE_TYPE["json"]
+                                             + CONTENT_LENGTH + str(len(chats_data))
+                                             + "\r\n\r\n" + chats_data)
+                        except Exception as e:
+                            print(e)
+                            with open("chat_ids.json", 'w') as file_:
+                                json.dump({}, file_)
+                                
+                elif path != "/" and "?" not in path:
+                    self.send_response(client_socket, path, "ok")
+
+            elif 'POST' in method:
+                if '/messages' in path:
+                    message = json.loads(data)
+                    chat_id = message["chat_id"]
+                    if chat_id not in self.chats:
+                        self.chats[chat_id] = []
+                    message_number = len(self.chats[chat_id]) + 1
+                    self.chats[chat_id].append({'number': message_number, 'content': message['content']})
+                    self.update_messages_file(chat_id)
+                    res_data = json.dumps({"success": "true"})
+                    self.response = (HTTP + STATUS_CODES["ok"]
+                                     + CONTENT_TYPE + FILE_TYPE["json"]
+                                     + CONTENT_LENGTH + str(len({res_data}))
+                                     + "\r\n\r\n" + res_data)
+
+                elif "get_id" in path:
+                    check_chat = json.loads(data)
+                    if check_chat["chat_name"] == "":
                         return
-                    chat_name = check_chat[-1]
-                    print("get check_id")
+                    chat_name = check_chat["chat_name"]
                     id_ = random.randint(1000000, 10000000)
-                    print(id_)
                     with open("chat_ids.json", 'r') as file:
                         try:
                             id_database = json.load(file)
@@ -88,61 +117,12 @@ class ChatServer:
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
 
-                elif '/get_chats' in path:
-                    chats_data = None
-                    with open("chat_ids.json", 'r') as file:
-                        try:
-                            chats_data = json.dumps(json.load(file))
-                            print("chats_data", chats_data)
-                            self.response = (HTTP + STATUS_CODES["ok"]
-                                             + CONTENT_TYPE + FILE_TYPE["json"]
-                                             + CONTENT_LENGTH + str(len(chats_data))
-                                             + "\r\n\r\n" + chats_data)
-                        except Exception as e:
-                            print(e)
-                            with open("chat_ids.json", 'w') as file:
-                                json.dump({}, file)
-                                
-                elif path != "/" and "?" not in path:
-                    self.send_response(client_socket, path, "ok")
-
-            elif 'POST' in method:
-                if '/messages' in path:
-                    print("BRUH")
-                    print(data)
-                    print(f"Received content: {data}")
-                    message = json.loads(data)
-                    chat_id = message["chat_id"]
-                    print("chat id", chat_id)
-                    if chat_id not in self.chats:
-                        self.chats[chat_id] = []
-                    message_number = len(self.chats[chat_id]) + 1
-                    self.chats[chat_id].append({'number': message_number, 'content': message['content']})
-                    self.update_messages_file(chat_id)
-                    self.broadcast_new_messages(chat_id, message)
-                    res_data = json.dumps({"success": "true"})
-                    self.response = (HTTP + STATUS_CODES["ok"]
-                                     + CONTENT_TYPE + FILE_TYPE["json"]
-                                     + CONTENT_LENGTH + str(len({res_data}))
-                                     + "\r\n\r\n" + res_data)
-
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
         finally:
             client_socket.send(self.response.encode())
             client_socket.close()
             self.clients.remove(client_socket)
-
-    def broadcast_new_messages(self, chat_id, new_message):
-        """
-        :todo need to do it per group...
-        """
-        for client in self.clients:
-            if client != self.server_socket:
-                try:
-                    client.send(f"New message in chat '{chat_id}': {new_message['content']}".encode())
-                except Exception as e:
-                    print(f"Error broadcasting message to a client: {e}")
 
     def update_messages_file(self, chat_id):
         filename = f'{chat_id}_messages.json'
@@ -152,10 +132,7 @@ class ChatServer:
     @staticmethod
     def send_response(client_socket, path, status_code):
         type_ = path.split(".")[-1]
-        print("type", type_)
-        print("origin", path)
         path = "webroot" + path
-        print("path", path)
         try:
             with open(path, 'rb') as file:
                 content = file.read()
