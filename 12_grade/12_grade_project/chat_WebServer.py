@@ -1,3 +1,4 @@
+from datetime import datetime
 import random
 import socket
 import json
@@ -16,7 +17,7 @@ STATUS_CODES = {"ok": "200 OK\r\n", "bad": "400 BAD REQUEST\r\n", "not found": "
                 "server error": "500 INTERNAL SERVER ERROR\r\n"}
 FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "css": "text/css\r\n",
              "js": "text/javascript; charset=UTF-8\r\n", "txt": "text/plain\r\n", "ico": "image/x-icon\r\n"
-             , "gif": "image/jpeg\r\n", "png": "image/png\r\n", "svg": "image/svg+xml",
+    , "gif": "image/jpeg\r\n", "png": "image/png\r\n", "svg": "image/svg+xml",
              "json": "application/json\r\n"}
 
 
@@ -34,7 +35,7 @@ class ChatServer:
         return data
 
     def load_chat_messages(self, chat_id):
-        filename = f'{chat_id}_messages.json'
+        filename = f'chats_data/{chat_id}_messages.json'
         try:
             with open(filename, 'r') as file:
                 self.chats[chat_id] = json.load(file)
@@ -54,7 +55,7 @@ class ChatServer:
                 if path == '/':
                     path = "/index.html"
                     self.send_response(client_socket, path, "ok")
-                elif '/messages' in path:
+                elif '/get_messages' in path:
                     chat_id = path.split('?')[1].split('=')[1] if '?' in path else 'default'
                     self.load_chat_messages(chat_id)
                     chat_messages = self.chats.get(chat_id, [])
@@ -65,9 +66,12 @@ class ChatServer:
                                      + "\r\n\r\n" + data)
 
                 elif '/get_chats' in path:
+                    print("get chats")
                     with open("chat_ids.json", 'r') as file:
                         try:
                             chats_data = json.dumps(json.load(file))
+                            if chats_data != {}:
+                                chats_data = self.sort_chats(chats_data)
                             self.response = (HTTP + STATUS_CODES["ok"]
                                              + CONTENT_TYPE + FILE_TYPE["json"]
                                              + CONTENT_LENGTH + str(len(chats_data))
@@ -76,13 +80,15 @@ class ChatServer:
                             print(e)
                             with open("chat_ids.json", 'w') as file_:
                                 json.dump({}, file_)
-                                
+
                 elif path != "/" and "?" not in path:
                     self.send_response(client_socket, path, "ok")
 
             elif 'POST' in method:
-                if '/messages' in path:
+                if '/send_messages' in path:
+                    print("got new msg")
                     message = json.loads(data)
+                    print("data", message)
                     chat_id = message["chat_id"]
                     if chat_id not in self.chats:
                         self.chats[chat_id] = []
@@ -92,13 +98,17 @@ class ChatServer:
                     res_data = json.dumps({"success": "true"})
                     self.response = (HTTP + STATUS_CODES["ok"]
                                      + CONTENT_TYPE + FILE_TYPE["json"]
-                                     + CONTENT_LENGTH + str(len({res_data}))
+                                     + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
+                    with open("chat_ids.json", 'r') as file:
+                        id_database = json.load(file)
+                    print(id_database)
+                    id_database[chat_id]["time"] = str(datetime.now())
+                    with open("chat_ids.json", 'w') as file_:
+                        json.dump(id_database, file_)
 
                 elif "get_id" in path:
                     check_chat = json.loads(data)
-                    if check_chat["chat_name"] == "":
-                        return
                     chat_name = check_chat["chat_name"]
                     id_ = random.randint(1000000, 10000000)
                     with open("chat_ids.json", 'r') as file:
@@ -108,7 +118,7 @@ class ChatServer:
                             id_database = {}
                     while id_ in id_database:
                         id_ = random.randint(1000000, 10000000)
-                    id_database[id_] = chat_name
+                    id_database[id_] = {"chat_name": chat_name, "time": str(datetime.now())}
                     with open("chat_ids.json", 'w') as file_:
                         json.dump(id_database, file_)
                     res_data = json.dumps({"the_id": str(id_)})
@@ -124,8 +134,16 @@ class ChatServer:
             client_socket.close()
             self.clients.remove(client_socket)
 
+    @staticmethod
+    def sort_chats(data):
+        chat_data = json.loads(data)
+        sorted_items = sorted(chat_data.items(), key=lambda x: x[1]['time'], reverse=True)
+        sorted_dict = dict(sorted_items)
+        sorted_json = json.dumps(sorted_dict)
+        return sorted_json
+
     def update_messages_file(self, chat_id):
-        filename = f'{chat_id}_messages.json'
+        filename = f'chats_data/{chat_id}_messages.json'
         with open(filename, 'w') as file:
             json.dump(self.chats[chat_id], file)
 

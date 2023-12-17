@@ -1,5 +1,5 @@
 const chatBox = document.getElementById('chat-box');
-const submit = document.getElementById('submit');
+const Send = document.getElementById('Send');
 const messageInput = document.getElementById('message-input');
 const add_chat = document.getElementById('add_chat')
 const x_btn = document.createElement("button")
@@ -9,7 +9,7 @@ input.maxLength = 20
 let current_chat = "chat1"
 var chat_id = 0
 
-submit.onclick = function (event) {
+Send.onclick = function (event) {
     event.preventDefault();
     const message = messageInput.value.trim();
     if (message !== '') {
@@ -31,9 +31,11 @@ x_btn.onclick = close_popup
 
 submit_chat.onclick = function(){
     console.log("bruh")
-    let id = get_chat_id(input.value)
-    create_chat(id ,input.value)
-    close_popup()
+    if(input.value != ""){
+        let id = get_chat_id(input.value)
+        create_chat(id ,input.value)
+        close_popup()
+    }
 }
 
 function close_popup(){
@@ -87,7 +89,6 @@ async function get_chat_id(name) {
         body: JSON.stringify({ 'chat_name': name})
     })
     .then(response => {
-        console.log(response)
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
@@ -109,8 +110,10 @@ async function get_chats(name) {
         return response.json();
     })
     .then(data => {
-        for (const [id, name] of Object.entries(data)) {
-            create_chat(id, name)
+        console.log(data)
+        for (const [id, data_] of Object.entries(data)) {
+            console.log(data_["chat_name"])
+            create_chat(id, data_["chat_name"])
         }
         return data
     })
@@ -120,7 +123,7 @@ async function get_chats(name) {
 };
 
 function sendMessage(message) {
-    fetch(`/messages?chatid=${current_chat}`, {
+    fetch(`/send_messages`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -135,6 +138,7 @@ function sendMessage(message) {
         return response.json();
     })
     .then(data => {
+        console.log(data)
         console.log('Message sent successfully:', data);
     })
     .catch(error => {
@@ -151,7 +155,7 @@ function displayMessage(message) {
 }
 
 function fetchMessages() {
-    fetch(`/messages?chat_id=${current_chat}`)
+    fetch(`/get_messages?chat_id=${current_chat}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
