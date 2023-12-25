@@ -32,9 +32,11 @@ x_btn.onclick = close_popup
 submit_chat.onclick = function(){
     console.log("bruh")
     if(input.value != ""){
-        let id = get_chat_id(input.value)
-        create_chat(id ,input.value)
+        get_chat_id(input.value)
         close_popup()
+    }
+    else{
+        console.log("the input has to be more then 0 ")
     }
 }
 
@@ -96,6 +98,7 @@ async function get_chat_id(name) {
     })
     .then(data => {
         console.log('Message sent successfully:', data);
+        create_chat(data["the_id"] ,name)
     })
     .catch(error => {
         console.error('Error sending message:', error);

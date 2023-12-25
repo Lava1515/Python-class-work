@@ -17,11 +17,11 @@ STATUS_CODES = {"ok": "200 OK\r\n", "bad": "400 BAD REQUEST\r\n", "not found": "
                 "server error": "500 INTERNAL SERVER ERROR\r\n"}
 FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "css": "text/css\r\n",
              "js": "text/javascript; charset=UTF-8\r\n", "txt": "text/plain\r\n", "ico": "image/x-icon\r\n"
-    , "gif": "image/jpeg\r\n", "png": "image/png\r\n", "svg": "image/svg+xml",
+             , "gif": "image/jpeg\r\n", "png": "image/png\r\n", "svg": "image/svg+xml",
              "json": "application/json\r\n"}
 
 
-class ChatServer:
+class ChatServer:w
     def __init__(self):
         self.server_socket = None
         self.chats = {}
@@ -53,7 +53,7 @@ class ChatServer:
             method, path, *_ = request.split()
             if "GET" in method:
                 if path == '/':
-                    path = "/index.html"
+                    path = "/Login.html"
                     self.send_response(client_socket, path, "ok")
                 elif '/get_messages' in path:
                     chat_id = path.split('?')[1].split('=')[1] if '?' in path else 'default'
@@ -102,7 +102,6 @@ class ChatServer:
                                      + "\r\n\r\n" + res_data)
                     with open("chat_ids.json", 'r') as file:
                         id_database = json.load(file)
-                    print(id_database)
                     id_database[chat_id]["time"] = str(datetime.now())
                     with open("chat_ids.json", 'w') as file_:
                         json.dump(id_database, file_)
