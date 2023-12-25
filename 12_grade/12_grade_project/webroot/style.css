@@ -82,7 +82,7 @@ z-index: 1;
   position: relative;
 }
 
-.login-box .user-box input {
+.login_register_mesagebox {
   width: 100%;
   padding: 10px 0;
   font-size: 16px;
@@ -93,7 +93,7 @@ z-index: 1;
   outline: none;
   background: transparent;
 }
-.login-box .user-box label {
+.shadow_name {
   position: absolute;
   top:0;
   left: 0;
@@ -173,6 +173,37 @@ z-index: 1;
   0% {
     top: -100%;
   }
+}
+
+.register_sign_up{
+  background-color: #00000000;
+  border: #cf5701;
+  color: #e2e4d6;
+  position: relative;
+  top: 15px;
+}
+
+.invisble{
+  background-color:rgba(251, 125, 0, 0);
+  color: rgba(251, 125, 0, 0);
+  border: rgba(251, 125, 0, 0);
+  padding: 0px 0 0px 0;
+  height: 0;
+  width: 0;
+}
+
+#eye1{
+  position: absolute;
+  top: 20px ;
+  right: 5px;
+  color: rgb(202, 188, 188);
+}
+
+#eye2{
+  position: absolute;
+  top: 20px ;
+  right: 5px;
+  color: rgb(202, 188, 188);
 }
 
 .register_sign_up{

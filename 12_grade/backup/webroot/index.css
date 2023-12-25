@@ -1,0 +1,117 @@
+#chats{
+    position: absolute;
+    right: 0%;
+    top:0%;
+    background-color: #1f242e;
+    width: 30%;
+    height: 100vh;
+    overflow-y:auto;
+}
+
+#chat-box{
+    background-color: rgb(46, 32, 31);
+    background-image: url("./images/background.png");
+    border: 1px solid #ccc; padding: 10px; 
+    margin-bottom: 10px;
+    height: 93vh;
+    overflow-y:auto;
+}
+
+#add_chat{
+    position: absolute;
+    right: 0%;
+    bottom: 0%;
+}
+
+.add_chat_popup{
+    width: 0px;
+    height: 0px;
+    opacity: 0;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    transition: all 1s ease-in-out;
+}
+
+.add_chat_popup_hover{
+    background-color: rgb(69, 78, 69);
+    border-radius: 5%;
+    opacity: 1;
+    width: 150px;
+    height: 150px;
+    bottom: 50%;
+    right: 60%;
+    transform: translate(50%, 50%);
+}
+
+.x_btn{
+    position: relative;
+    background-color: rgba(255, 0, 0, 0);
+    border: 0px;
+    left: 85%;
+}
+
+.x_btn:hover{
+    background-color:rgba(0, 0, 0, 0.153);
+    border-radius: 50%;
+}
+
+.input_chat{
+    position: relative;
+    width: 100%;
+}
+.submit_chat{
+    position: relative;
+    border: 0px;
+    background-color: rgba(216, 216, 19, 0.744);
+    top: 40%;
+    left: 30%;
+    border-radius: 2px;
+}
+
+.submit_chat:hover{
+    background-color: rgba(188, 188, 77, 0.744);
+   
+}
+
+.allchats{
+    color: white;
+    position: relative;
+    width: 100%;
+    height: 5%;
+    align-items: center;
+    text-align: center;
+    border-bottom: 1px solid #383f4d;
+}
+
+.allchats:hover{
+   background-color: #3e424b;
+}
+
+.messageElement{
+    color: white;
+    width: fit-content;
+    border-radius: 5%;
+    padding: 10px;
+    background-color: rgb(41, 46, 41);
+}
+.send_container{
+    position: absolute;
+    top: 92.9vh;
+    height: 7vh;
+    width: 70%;
+    background-color: #383f4d;
+}
+#message-input{
+    position: relative;
+    height: 65%;
+    width: 60%;
+    top: 20%;
+    left: 15%;
+}
+
+#Send{
+    position: relative;
+    top: 20%;
+    left: 15%;
+}

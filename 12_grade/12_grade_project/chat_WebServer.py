@@ -21,7 +21,7 @@ FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "cs
              "json": "application/json\r\n"}
 
 
-class ChatServer:w
+class ChatServer:
     def __init__(self):
         self.server_socket = None
         self.chats = {}

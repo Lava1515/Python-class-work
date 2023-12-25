@@ -1,0 +1,184 @@
+html {
+  height: 100%;
+}
+
+body {
+display: flex;
+justify-content: center;
+align-items: center;
+overflow-y: hidden;
+margin:0;
+padding:0;
+font-family: sans-serif;
+background: url("./images/beach_sunset.png");
+
+background-size:cover;
+background-attachment: fixed ;
+}
+@keyframes box_animation {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
+}
+
+@keyframes box_animation_back {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(-360deg); }
+}
+
+.login-box {
+top: 50%;  width: 450px;
+background: linear-gradient(to right, #827034, #6b0202);
+padding: 4rem;
+border-radius: 10px;
+border: 3px solid rgba(215, 7, 7, 0.42);
+position: relative;
+text-align: center;
+z-index: 5;
+
+
+
+}#box_wrap::before {
+content: '';
+position: absolute;
+width: 594px;
+height: 505px;
+top: -50%;
+left: -50%;
+background: linear-gradient(0deg, transparent, transparent, #96b607, #c5ff27, #cf5701);
+transform-origin: bottom right;
+animation: box_animation 6s linear infinite;
+z-index: 1;
+}
+
+#box_wrap {
+background: transparent;
+border-radius: 10px;
+padding: 8px;
+overflow: hidden;
+position: absolute;
+top: 20%;
+}
+
+#box_wrap::after {
+content: '';
+position: absolute;
+width: 594px;
+height: 505px;
+top: -50%;
+left: -50%;
+background: linear-gradient(0deg, #96b607, #c5ff27, #cf5701, transparent, transparent);
+transform-origin: bottom right;
+animation: box_animation_back 6s linear infinite;
+z-index: 1;
+}
+.login-box h2 {
+  margin: 0 0 30px;
+  padding: 0;
+  color: #fff;
+  text-align: center;
+}
+
+.login-box .user-box {
+  position: relative;
+}
+
+.login-box .user-box input {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 16px;
+  color: #fff;
+  margin-bottom: 30px;
+  border: none;
+  border-bottom: 1px solid #fff;
+  outline: none;
+  background: transparent;
+}
+.login-box .user-box label {
+  position: absolute;
+  top:0;
+  left: 0;
+  padding: 10px 0;
+  font-size: 16px;
+  color: #fff;
+  pointer-events: none;
+  transition: .5s;
+}
+
+.login-box .user-box input:focus ~ label,
+.login-box .user-box input:valid ~ label {
+  top: -20px;
+  left: 0;
+  color: #f48403;
+  font-size: 12px;
+}
+
+.login-box form a{
+  position: relative;
+  display: inline-block;
+  padding: 10px 20px;
+  color: #f48403;
+  font-size: 16px;
+  text-decoration: none;
+  text-transform: uppercase;
+  overflow: hidden;
+  transition: .5s;
+  margin-top: 40px;
+  letter-spacing: 4px
+}
+
+.hover:hover {
+  background: #f48403;
+  color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 0 5px #f48403,
+              0 0 25px #f48403,
+              0 0 50px #f48403,
+              0 0 100px #f48403;
+}
+
+.login-box a span {
+  position: absolute;
+  display: block;
+}
+
+.login-box a span:nth-child(1) {
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f48403);
+  animation: btn-anim1 1s linear infinite;
+}
+
+@keyframes btn-anim1 {
+  0% {
+    left: -100%;
+  }
+  50%,100% {
+    left: 100%;
+  }
+}
+
+.login-box a span:nth-child(2) {
+  top: -100%;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent, #f48403);
+  animation: btn-anim2 1s linear infinite;
+  animation-delay: .25s
+}
+
+@keyframes btn-anim2 {
+  0% {
+    top: -100%;
+  }
+}
+
+.register_sign_up{
+  background-color: #00000000;
+  border: #cf5701;
+  color: #e2e4d6;
+  position: relative;
+  top: 15px;
+}
