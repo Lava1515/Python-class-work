@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 1</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        input {
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2>Page 1</h2>
+    <label for="username">Enter your name:</label>
+    <input type="text" id="username">
+    <br>
+    <button onclick="saveAndNavigate()">Go to Page 2</button>
+
+    <script>
+        function saveAndNavigate() {
+            var username = document.getElementById('username').value;
+            
+            // Validate input (avoiding empty or malicious input)
+            if (!username) {
+                alert("Please enter a valid username.");
+                return;
+            }
+
+            // Sanitize input (escaping HTML characters)
+            username = username.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+
+            // Store data securely in session storage
+            sessionStorage.setItem('username', username);
+
+            // Redirect to Page 2
+            window.location.href = 'index2.html';
+        }
+    </script>
+</body>
+</html>

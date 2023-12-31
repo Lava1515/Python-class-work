@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 2</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        p {
+            margin-bottom: 40px;
+        }
+        button {
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2>Page 2</h2>
+    <p>Welcome to Page 2, <span id="displayUsername"></span>!</p>
+    <button onclick="goBack()">Go back to Page 1</button>
+
+    <script>
+        // Retrieve data from session storage
+        var savedUsername = sessionStorage.getItem('username');
+
+        // Display the retrieved data securely
+        if (savedUsername) {
+            document.getElementById('displayUsername').innerText = savedUsername;
+        } else {
+            document.getElementById('displayUsername').innerText = "Guest";
+        }
+
+        function goBack() {
+            window.location.href = 'index1.html';
+        }
+    </script>
+</body>
+</html>

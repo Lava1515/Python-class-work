@@ -5,6 +5,8 @@ const add_chat = document.getElementById('add_chat')
 const x_btn = document.createElement("button")
 const submit_chat = document.createElement("button");
 const input = document.createElement("input");
+const currentUsername = sessionStorage.getItem('username');
+console.log(currentUsername)
 input.maxLength = 20
 let current_chat = "chat1"
 var chat_id = 0
@@ -88,7 +90,7 @@ async function get_chat_id(name) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 'chat_name': name})
+        body: JSON.stringify({"current_user": currentUsername , 'chat_name': name})
     })
     .then(response => {
         if (!response.ok) {
@@ -106,7 +108,7 @@ async function get_chat_id(name) {
 };
 
 async function get_chats(name) {
-    await fetch(`/get_chats`, {
+    await fetch(`/get_chats?${currentUsername}`, {
         method: 'Get',
     })
     .then(response => {
@@ -115,8 +117,10 @@ async function get_chats(name) {
     .then(data => {
         console.log(data)
         for (const [id, data_] of Object.entries(data)) {
-            console.log(data_["chat_name"])
-            create_chat(id, data_["chat_name"])
+            if(data_["chat_name"] != undefined){
+                console.log(data_["chat_name"])
+                create_chat(id, data_["chat_name"])
+            }
         }
         return data
     })
@@ -131,7 +135,7 @@ function sendMessage(message) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 'chat_id': current_chat, 'content': message })
+        body: JSON.stringify({"current_user": currentUsername , 'chat_id': current_chat, 'content': message })
     })
     .then(response => {
         if (!response.ok) {

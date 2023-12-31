@@ -13,19 +13,20 @@
           <h2 id="title">Login</h2>
           <form>
             <div class="user-box">
-              <input type="text" name="" required="" class="login_register_mesagebox">
-              <label class="shadow_name">Username</label>
+              <input type="text" name="" required="" class="login_register_mesagebox" id="UsernameInput">
+              <label id="Username" class="shadow_name">Username</label>
             </div>
             <div class="user-box">
-              <input type="password" name="" required="" class="login_register_mesagebox" id="pass1">
+              <input type="password" name="" required="" class="login_register_mesagebox" id="password">
               <label class="shadow_name" >Password</label>
               <i class="fa fa-eye" id="eye1" onmouseover="change_eye_slash1()" onmouseout="change_eye1()"></i>
             </div>
             <div class="user-box">
-              <input type="password" name="" required="" class="invisble" id="forgot_pass_line">
-              <label class="shadow_name" id="forgot_pass"></label>
+              <input type="password" name="" required="" class="invisble" id="comfirm_pass">
+              <label class="shadow_name" id="comfirm_pass_line"></label>
               <i onmouseover="change_eye_slash2()" onmouseout="change_eye2()" id="eye2"></i>
             </div>
+            <div class="invisble" id="pop_up"></div>
             <a class="hover" id="submit">
               <span></span>
               <span></span>

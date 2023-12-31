@@ -1,0 +1,110 @@
+#   Ex. 2.7 template - server side
+#   Author: Liav kolet
+
+import os
+
+import pygame as pygame
+
+import pygame
+import pyautogui
+import shutil
+import subprocess
+import socket
+from Protocol import *
+import glob
+from typing import *
+
+IP = "0.0.0.0"
+
+
+def handle_client_request(cmd: str, params: str = None) -> bytes:
+    if cmd == "DIR":
+        if params.endswith("\\"):
+            files_list = glob.glob(params + "*.*")
+        else:
+            files_list = glob.glob(params + "\\*.*")
+        return "\n".join(files_list).encode()
+
+    elif cmd == "DELETE":
+        if os.path.isfile(params):
+            os.remove(params)
+            not_the_removed_files = glob.glob("\\".join(os.path.abspath(__file__).split("\\")[:-1]) + "\\*.*")
+            return "\n".join(not_the_removed_files).encode()
+        else:
+            return "file doesn't exist".encode()
+
+    elif cmd == "COPY":
+        if os.path.isfile(params.split("|")[0]):
+            shutil.copy(params.split("|")[0], params.split("|")[1])
+            return "FILE copied successfully".encode()
+        else:
+            return "file doesn't exist".encode()
+    elif cmd == "EXECUTE":
+        try:
+            subprocess.call(params)
+            return "The file have been EXECUTED ".encode()
+        except (FileNotFoundError, OSError) as error:
+            return "The cant be opened (Doesn't exist or not .exe)".encode()
+
+    elif cmd == "TAKE_SCREENSHOT":
+        image = pyautogui.screenshot()
+        image.save(r'screen.jpg')
+        return "The screen shot has been taken".encode()
+
+    elif cmd == "SEND_PHOTO":
+        with open(r'screen.jpg', "rb") as file:
+            photo_data = file.read()
+        return photo_data
+
+
+def main():
+    # open socket with client
+    server_socket = socket.socket()
+    server_socket.bind((IP, 8820))
+    server_socket.listen()
+    print("Server is up and running")
+    (client_socket, client_address) = server_socket.accept()
+    print("[Server]: New Connection From: '%s:%s'" % (client_address[0], client_address[1]))
+
+    while True:
+        valid_protocol, msg = get_msg(client_socket)
+        msg = msg.decode()
+        cmd = msg.split("|")[0]
+        msg = "|".join(msg.split("|")[1:])
+
+        if valid_protocol and msg != "":
+            print("[Client]: " + cmd + msg)
+            if check_cmd(cmd+"|"+msg):
+                if cmd == "TAKE_SCREENSHOT" or cmd == "SEND_PHOTO":
+                    reply = handle_client_request(cmd)
+
+                    if reply is not None:
+                        client_socket.send(create_msg(reply))
+
+                elif cmd != "EXIT":
+                    reply = handle_client_request(cmd, msg)
+
+                    if reply is not None:
+                        client_socket.send(create_msg(reply))
+
+                else:
+                    break
+
+            else:
+                client_socket.send(create_msg("check from here ".encode()))
+
+        elif msg == "":
+            break
+
+        else:
+            response = 'Packet not according to protocol'
+            client_socket.send(create_msg(response.encode()))
+            print(response)
+            client_socket.recv(1024)
+    print("Closing connection")
+    server_socket.close()
+
+
+if __name__ == '__main__':
+    main()
+
