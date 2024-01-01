@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 import random
 import socket
@@ -35,6 +36,9 @@ class ChatServer:
         return data
 
     def load_chat_messages(self, chat_id):
+        current_directory = os.getcwd()
+        new_directory_path = os.path.join(current_directory, "chats_data")
+        os.makedirs(new_directory_path, exist_ok=True)
         filename = f'chats_data/{chat_id}_messages.json'
         try:
             with open(filename, 'r') as file:
@@ -80,6 +84,11 @@ class ChatServer:
                                              + "\r\n\r\n" + chats_data)
                     except Exception as e:
                         print(e)
+                        print("file doesnt exist", name)
+                        current_directory = os.getcwd()
+                        new_directory_path = os.path.join(current_directory, "chats_ids")
+                        os.makedirs(new_directory_path, exist_ok=True)
+
                         with open(f"./chats_ids/{name}_chat_ids.json", 'w') as file_:
                             json.dump({}, file_)
 
@@ -89,7 +98,7 @@ class ChatServer:
             elif 'POST' in method:
                 if '/send_messages' in path:
                     message = json.loads(data)
-                    print(message["current_user"])
+                    print(message)
                     chat_id = message["chat_id"]
                     if chat_id not in self.chats:
                         self.chats[chat_id] = []
@@ -101,15 +110,14 @@ class ChatServer:
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
-
-                    with open(f"./chats_ids/{message["current_user"]}_chat_ids.json", 'r') as file:
+                    with open(f"./chats_ids/{message['current_user']}_chat_ids.json", 'r') as file:
                         try:
                             id_database = json.load(file)
                         except Exception as e:
                             print(e)
                             id_database = {}
                     id_database[chat_id]["time"] = str(datetime.now())
-                    with open(f"./chats_ids/{message["current_user"]}_chat_ids.json", 'w') as file_:
+                    with open(f"./chats_ids/{message['current_user']}_chat_ids.json", 'w') as file_:
                         json.dump(id_database, file_)
 
                 elif "get_id" in path:
@@ -118,7 +126,7 @@ class ChatServer:
                     print(check_chat["current_user"])
                     chat_name = check_chat["chat_name"]
                     id_ = random.randint(1000000, 10000000)
-                    with open(f"./chats_ids/{check_chat["current_user"]}_chat_ids.json", 'r') as file:
+                    with open(f"./chats_ids/{check_chat['current_user']}_chat_ids.json", 'r') as file:
                         try:
                             id_database = json.load(file)
                         except json.decoder.JSONDecodeError:
@@ -126,7 +134,7 @@ class ChatServer:
                     while id_ in id_database:
                         id_ = random.randint(1000000, 10000000)
                     id_database[id_] = {"chat_name": chat_name, "time": str(datetime.now())}
-                    with open(f"./chats_ids/{check_chat["current_user"]}_chat_ids.json", 'w') as file_:
+                    with open(f"./chats_ids/{check_chat['current_user']}_chat_ids.json", 'w') as file_:
                         json.dump(id_database, file_)
                     res_data = json.dumps({"the_id": str(id_)})
                     self.response = (HTTP + STATUS_CODES["ok"]
@@ -146,7 +154,7 @@ class ChatServer:
                     acc = json.loads(data)
                     res_data = json.dumps({"can_login": "false"})
                     if acc["name"].lower() in details_.keys():
-                        if acc["pass"] == details_[acc["name"]]:
+                        if acc["pass"] == details_[str(acc["name"])]:
                             res_data = json.dumps({"can_login": "true"})
                     self.response = (HTTP + STATUS_CODES["ok"]
                                      + CONTENT_TYPE + FILE_TYPE["json"]
