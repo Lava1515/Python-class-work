@@ -30,7 +30,7 @@
     position: absolute;
     bottom: 0;
     right: 0;
-    transition: all 1s ease-in-out;
+    transition: all 0.3s ease-in-out;
 }
 
 .add_chat_popup_hover{
@@ -114,4 +114,16 @@
     position: relative;
     top: 20%;
     left: 15%;
+}
+
+.add_contacts{
+    position: relative;
+    width: 80%;
+    top: 20%;
+}
+
+.add_groups{
+    position: relative;
+    width: 80%;
+    top: 50%;
 }

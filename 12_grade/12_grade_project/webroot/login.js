@@ -5,6 +5,7 @@ function change(){
         document.getElementById("comfirm_pass_line").innerHTML = ""
         document.getElementById("comfirm_pass").className ="invisble"
         document.getElementById("eye2").className = ""
+        document.getElementById("pop_up").innerHTML = ""
     }
 
     else if(document.getElementById("Login_register").innerHTML == "Register"){
@@ -35,29 +36,50 @@ function change_eye2(){
     document.getElementById("comfirm_pass").type="password"
 }
 
-document.getElementById("submit").onclick = myfun
+document.getElementById("submit").onclick = submit
 
-function myfun(){
+function submit(){
     let name = document.getElementById("UsernameInput").value
     let pass = document.getElementById("password").value
+    let pop_up = document.getElementById("pop_up")
     if (document.getElementById("title").innerHTML == "Login"){
-        send_details("Login", name, pass)
+        if(name == ""){
+            pop_up.innerHTML = "No username provided"
+            pop_up.className = "pop_up"
+        }
+        else if(pass == ""){
+            pop_up.innerHTML = "Password is needed"
+            pop_up.className = "pop_up"
+        }
+        else{
+            send_details("Login", name, pass)
+        }
     }
     else if (document.getElementById("title").innerHTML == "Register"){
         console.log("Register")
-        if(pass != document.getElementById("comfirm_pass").value){
-            let not_same = document.getElementById("pop_up") 
-            not_same.innerHTML ="*The paswords are not matching*"
-            not_same.className = "pop_up"
+        if(pass != document.getElementById("comfirm_pass").value){ 
+            pop_up.innerHTML ="*The paswords are not matching*"
+            pop_up.className = "pop_up"
         }
         else{
-            send_details("Register", name, pass)
+            if(name == ""){
+                pop_up.innerHTML = "Username must be given"
+                pop_up.className = "pop_up"
+            }
+            else if(pass == ""){
+                pop_up.innerHTML = "Do u think this password is suitble?"
+                pop_up.className = "pop_up"
+            }
+            else{
+                send_details("Register", name, pass)
+            }
         }
     }
 }
 
 
 function send_details(method_, name, pass) {
+    console.log("send_details" , method_ , name , pass)
     fetch(`/send_details_${method_}`, {
         method: 'POST',
         headers: {
@@ -73,14 +95,18 @@ function send_details(method_, name, pass) {
         return response.json();
     })
     .then(data => {
+        let pop_up = document.getElementById("pop_up")
         if(data["can_login"] =="true"){
             sessionStorage.setItem('username', name);
             window.location.href = "index.html"
         }
+        else if(data["can_login"] =="false"){
+            pop_up.innerHTML = "Username or pasword are not matching"
+            pop_up.className = "pop_up"
+        }
         if (data["existing"] =="true"){
-            let not_same = document.getElementById("pop_up") 
-            not_same.innerHTML ="*User already exists*"
-            not_same.className = "pop_up"
+            pop_up.innerHTML ="*User already exists*"
+            pop_up.className = "pop_up"
         }
         else if (data["existing"] =="false"){
             sessionStorage.setItem('username', name);

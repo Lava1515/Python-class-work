@@ -21,12 +21,28 @@ Send.onclick = function (event) {
 };
 
 add_chat.onclick = function() {
-    var element = document.getElementById("add_chat_popup");
-    element.className += (" add_chat_popup_hover");
-    while (element.firstChild) {
-        element.removeChild(element.firstChild);
+    var add_chat_popup = document.getElementById("add_chat_popup")
+    add_chat_popup.className += (" add_chat_popup_hover");
+    while (add_chat_popup.firstChild) {
+        add_chat_popup.removeChild(element.firstChild);
     }
-    all_addchat()
+    x_btn.innerHTML = "x"
+    x_btn.className = "x_btn"
+    add_chat_popup.appendChild(x_btn)
+    const contact_button = document.createElement("button");
+    const group_button = document.createElement("button");
+
+    contact_button.innerHTML = "add contacts"
+    contact_button.className = "add_contacts"
+    add_chat_popup.appendChild(contact_button)
+
+    group_button.innerHTML = "add groups"
+    group_button.className = "add_groups"
+    add_chat_popup.appendChild(group_button)
+
+
+
+    group_button.onclick = all_addchat
 }
 
 x_btn.onclick = close_popup
@@ -44,7 +60,7 @@ submit_chat.onclick = function(){
 
 function close_popup(){
     var element = document.getElementById("add_chat_popup");
-    element.className = ("add_chat_popup");
+    element.className = "add_chat_popup";
     const add_chat = document.getElementById("add_chat_popup")
     while (add_chat.firstChild) {
         add_chat.removeChild(add_chat.firstChild);
@@ -53,19 +69,22 @@ function close_popup(){
 }
 
 function all_addchat(){
-    const add_chat = document.getElementById("add_chat_popup")
+    var add_chat_popup = document.getElementById("add_chat_popup")
+    while (add_chat_popup.firstChild) {
+        add_chat_popup.removeChild(add_chat_popup.firstChild);
+    }
     x_btn.innerHTML = "x"
     x_btn.className = "x_btn"
-    add_chat.appendChild(x_btn)
+    add_chat_popup.appendChild(x_btn)
 
     input.setAttribute("type", "text"); 
     input.placeholder = "Group name:"
     input.className = "input_chat"
-    add_chat.appendChild(input)
+    add_chat_popup.appendChild(input)
 
     submit_chat.innerHTML = "submit"
     submit_chat.className = "submit_chat"
-    add_chat.appendChild(submit_chat)
+    add_chat_popup.appendChild(submit_chat)
 }
 
 function create_chat(id , chatname){

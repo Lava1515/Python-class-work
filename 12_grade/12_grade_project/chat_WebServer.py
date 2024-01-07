@@ -146,7 +146,8 @@ class ChatServer:
                     acc = json.loads(data)
                     res_data = json.dumps({"can_login": "false"})
                     if acc["name"].lower() in details_.keys():
-                        if acc["pass"] == details_[acc["name"]]:
+                        print(details_)
+                        if acc["pass"] == details_[acc["name"].lower()]:
                             res_data = json.dumps({"can_login": "true"})
                     self.response = (HTTP + STATUS_CODES["ok"]
                                      + CONTENT_TYPE + FILE_TYPE["json"]
