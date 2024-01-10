@@ -32,7 +32,7 @@ add_chat.onclick = function() {
     const contact_button = document.createElement("button");
     const group_button = document.createElement("button");
 
-    contact_button.innerHTML = "add contacts"
+    contact_button.innerHTML = "add contact"
     contact_button.className = "add_contacts"
     add_chat_popup.appendChild(contact_button)
 
@@ -41,8 +41,8 @@ add_chat.onclick = function() {
     add_chat_popup.appendChild(group_button)
 
 
-
-    group_button.onclick = all_addchat
+    contact_button.onclick = add_contact
+    group_button.onclick = addchat
 }
 
 x_btn.onclick = close_popup
@@ -68,7 +68,30 @@ function close_popup(){
     input.value = ""
 }
 
-function all_addchat(){
+
+function add_contact(){
+    console.log("add_contacts")
+    var add_chat_popup = document.getElementById("add_chat_popup")
+    while (add_chat_popup.firstChild) {
+        add_chat_popup.removeChild(add_chat_popup.firstChild);
+    }
+
+    x_btn.innerHTML = "x"
+    x_btn.className = "x_btn"
+    add_chat_popup.appendChild(x_btn)
+
+    input.setAttribute("type", "text"); 
+    input.placeholder = "username:"
+    input.className = "input_chat"
+    add_chat_popup.appendChild(input)
+
+    submit_chat.innerHTML = "submit"
+    submit_chat.className = "submit_chat"
+    add_chat_popup.appendChild(submit_chat)
+}
+
+
+function addchat(){
     var add_chat_popup = document.getElementById("add_chat_popup")
     while (add_chat_popup.firstChild) {
         add_chat_popup.removeChild(add_chat_popup.firstChild);

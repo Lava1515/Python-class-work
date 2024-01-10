@@ -102,14 +102,14 @@ class ChatServer:
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
 
-                    with open(f"./chats_ids/{message["current_user"]}_chat_ids.json", 'r') as file:
+                    with open(f"./chats_ids/{message['current_user']}_chat_ids.json", 'r') as file:
                         try:
                             id_database = json.load(file)
                         except Exception as e:
                             print(e)
                             id_database = {}
                     id_database[chat_id]["time"] = str(datetime.now())
-                    with open(f"./chats_ids/{message["current_user"]}_chat_ids.json", 'w') as file_:
+                    with open(f"./chats_ids/{message['current_user']}_chat_ids.json", 'w') as file_:
                         json.dump(id_database, file_)
 
                 elif "get_id" in path:
@@ -118,7 +118,7 @@ class ChatServer:
                     print(check_chat["current_user"])
                     chat_name = check_chat["chat_name"]
                     id_ = random.randint(1000000, 10000000)
-                    with open(f"./chats_ids/{check_chat["current_user"]}_chat_ids.json", 'r') as file:
+                    with open(f"./chats_ids/{check_chat['current_user']}_chat_ids.json", 'r') as file:
                         try:
                             id_database = json.load(file)
                         except json.decoder.JSONDecodeError:
@@ -126,7 +126,7 @@ class ChatServer:
                     while id_ in id_database:
                         id_ = random.randint(1000000, 10000000)
                     id_database[id_] = {"chat_name": chat_name, "time": str(datetime.now())}
-                    with open(f"./chats_ids/{check_chat["current_user"]}_chat_ids.json", 'w') as file_:
+                    with open(f'./chats_ids/{check_chat["current_user"]}_chat_ids.json', 'w') as file_:
                         json.dump(id_database, file_)
                     res_data = json.dumps({"the_id": str(id_)})
                     self.response = (HTTP + STATUS_CODES["ok"]
@@ -216,9 +216,9 @@ class ChatServer:
 
     def start_server(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind(('localhost', 5000))
+        self.server_socket.bind(('0.0.0.0', 5000))
         self.server_socket.listen(5)
-        print("Server is running on http://localhost:5000")
+        print("Server is running on http://127.0.0.1:5000")
 
         try:
             while True:
