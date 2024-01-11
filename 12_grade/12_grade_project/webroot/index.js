@@ -70,7 +70,6 @@ function close_popup(){
 
 
 function add_contact(){
-    console.log("add_contacts")
     var add_chat_popup = document.getElementById("add_chat_popup")
     while (add_chat_popup.firstChild) {
         add_chat_popup.removeChild(add_chat_popup.firstChild);
@@ -88,6 +87,29 @@ function add_contact(){
     submit_chat.innerHTML = "submit"
     submit_chat.className = "submit_chat"
     add_chat_popup.appendChild(submit_chat)
+
+    submit_chat.onclick = function(){
+        fetch(`/add_friend`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({"user_to_add": input.value})
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Message sent successfully:', data);
+            create_chat(data["the_id"] ,name)
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+        });
+    }
 }
 
 

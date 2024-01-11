@@ -176,6 +176,32 @@ class ChatServer:
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
+
+                elif "/add_friend" in path:
+                    print("add_friend")
+                    message = json.loads(data)
+                    print(message)
+                    # try:
+                    #     with open("accounts_details.json", 'r') as file:
+                    #         details_ = json.load(file)
+                    # except Exception as e:
+                    #     print(e)
+                    #     with open("accounts_details.json", 'w') as file_:
+                    #         details_ = {}
+                    #         json.dump({}, file_)
+                    # print(data)
+                    # acc = json.loads(data)
+                    # if acc["name"].lower() not in details_.keys():
+                    #     details_[acc["name"].lower()] = acc["pass"]
+                    #     with open("accounts_details.json", 'w') as file_:
+                    #         json.dump(details_, file_)
+                    #     res_data = json.dumps({"existing": "false"})
+                    # else:
+                    #     res_data = json.dumps({"existing": "true"})
+                    self.response = (HTTP + STATUS_CODES["ok"]
+                                     + CONTENT_TYPE + FILE_TYPE["json"]
+                                     + CONTENT_LENGTH + str(len(res_data))
+                                     + "\r\n\r\n" + res_data)
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
         finally:
