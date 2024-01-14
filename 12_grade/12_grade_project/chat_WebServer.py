@@ -181,23 +181,19 @@ class ChatServer:
                     print("add_friend")
                     message = json.loads(data)
                     print(message)
-                    # try:
-                    #     with open("accounts_details.json", 'r') as file:
-                    #         details_ = json.load(file)
-                    # except Exception as e:
-                    #     print(e)
-                    #     with open("accounts_details.json", 'w') as file_:
-                    #         details_ = {}
-                    #         json.dump({}, file_)
-                    # print(data)
-                    # acc = json.loads(data)
-                    # if acc["name"].lower() not in details_.keys():
-                    #     details_[acc["name"].lower()] = acc["pass"]
-                    #     with open("accounts_details.json", 'w') as file_:
-                    #         json.dump(details_, file_)
-                    #     res_data = json.dumps({"existing": "false"})
-                    # else:
-                    #     res_data = json.dumps({"existing": "true"})
+                    try:
+                        with open("accounts_details.json", 'r') as file:
+                            details_ = json.load(file)
+                    except Exception as e:
+                        print(e)
+                        with open("accounts_details.json", 'w') as file_:
+                            details_ = {}
+                            json.dump({}, file_)
+                    if message["user_to_add"] in details_.keys():
+                        print("in data")
+                        res_data = json.dumps({"Add_successfully": "true"})
+                    else:
+                        res_data = json.dumps({"Add_successfully": "false"})
                     self.response = (HTTP + STATUS_CODES["ok"]
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(res_data))

@@ -45,11 +45,11 @@ function submit(){
     if (document.getElementById("title").innerHTML == "Login"){
         if(name == ""){
             pop_up.innerHTML = "No username provided"
-            pop_up.className = "pop_up"
+            pop_up.className = "alert_pop_up"
         }
         else if(pass == ""){
             pop_up.innerHTML = "Password is needed"
-            pop_up.className = "pop_up"
+            pop_up.className = "alert_pop_up"
         }
         else{
             send_details("Login", name, pass)
@@ -59,16 +59,16 @@ function submit(){
         console.log("Register")
         if(pass != document.getElementById("comfirm_pass").value){ 
             pop_up.innerHTML ="*The paswords are not matching*"
-            pop_up.className = "pop_up"
+            pop_up.className = "alert_pop_up"
         }
         else{
             if(name == ""){
                 pop_up.innerHTML = "Username must be given"
-                pop_up.className = "pop_up"
+                pop_up.className = "alert_pop_up"
             }
             else if(pass == ""){
                 pop_up.innerHTML = "Do u think this password is suitble?"
-                pop_up.className = "pop_up"
+                pop_up.className = "alert_pop_up"
             }
             else{
                 send_details("Register", name, pass)
@@ -102,11 +102,11 @@ function send_details(method_, name, pass) {
         }
         else if(data["can_login"] =="false"){
             pop_up.innerHTML = "Username or pasword are not matching"
-            pop_up.className = "pop_up"
+            pop_up.className = "alert_pop_up"
         }
         if (data["existing"] =="true"){
             pop_up.innerHTML ="*User already exists*"
-            pop_up.className = "pop_up"
+            pop_up.className = "alert_pop_up"
         }
         else if (data["existing"] =="false"){
             sessionStorage.setItem('username', name);

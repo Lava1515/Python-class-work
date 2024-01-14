@@ -3,7 +3,6 @@ const Send = document.getElementById('Send');
 const messageInput = document.getElementById('message-input');
 const add_chat = document.getElementById('add_chat')
 const x_btn = document.createElement("button")
-const submit_chat = document.createElement("button");
 const input = document.createElement("input");
 const currentUsername = sessionStorage.getItem('username');
 console.log(currentUsername)
@@ -47,17 +46,6 @@ add_chat.onclick = function() {
 
 x_btn.onclick = close_popup
 
-submit_chat.onclick = function(){
-    console.log("bruh")
-    if(input.value != ""){
-        get_chat_id(input.value)
-        close_popup()
-    }
-    else{
-        console.log("the input has to be more then 0 ")
-    }
-}
-
 function close_popup(){
     var element = document.getElementById("add_chat_popup");
     element.className = "add_chat_popup";
@@ -70,23 +58,24 @@ function close_popup(){
 
 
 function add_contact(){
-    var add_chat_popup = document.getElementById("add_chat_popup")
+    var add_chat_popup = document.getElementById("add_chat_popup");
+    var submit_chat = document.createElement("button");
     while (add_chat_popup.firstChild) {
         add_chat_popup.removeChild(add_chat_popup.firstChild);
     }
 
-    x_btn.innerHTML = "x"
-    x_btn.className = "x_btn"
-    add_chat_popup.appendChild(x_btn)
+    x_btn.innerHTML = "x";
+    x_btn.className = "x_btn";
+    add_chat_popup.appendChild(x_btn);
 
     input.setAttribute("type", "text"); 
-    input.placeholder = "username:"
-    input.className = "input_chat"
-    add_chat_popup.appendChild(input)
+    input.placeholder = "username:";
+    input.className = "input_chat";
+    add_chat_popup.appendChild(input);
 
-    submit_chat.innerHTML = "submit"
-    submit_chat.className = "submit_chat"
-    add_chat_popup.appendChild(submit_chat)
+    submit_chat.innerHTML = "submit";
+    submit_chat.className = "submit_chat";
+    add_chat_popup.appendChild(submit_chat);
 
     submit_chat.onclick = function(){
         fetch(`/add_friend`, {
@@ -94,7 +83,7 @@ function add_contact(){
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({"user_to_add": input.value})
+            body: JSON.stringify({"user_to_add": input.value, "current_user": currentUsername})
         })
         .then(response => {
             if (!response.ok) {
@@ -104,7 +93,11 @@ function add_contact(){
         })
         .then(data => {
             console.log('Message sent successfully:', data);
-            create_chat(data["the_id"] ,name)
+            if(data["Add_successfully"] == "false"){
+                let not_user = document.createElement("h3")
+                not_user.className = ""
+                console.log("username not exixt")
+            }
         })
         .catch(error => {
             console.error('Error sending message:', error);
@@ -114,7 +107,8 @@ function add_contact(){
 
 
 function addchat(){
-    var add_chat_popup = document.getElementById("add_chat_popup")
+    var add_chat_popup = document.getElementById("add_chat_popup");
+    var submit_chat = document.createElement("button");
     while (add_chat_popup.firstChild) {
         add_chat_popup.removeChild(add_chat_popup.firstChild);
     }
@@ -130,6 +124,18 @@ function addchat(){
     submit_chat.innerHTML = "submit"
     submit_chat.className = "submit_chat"
     add_chat_popup.appendChild(submit_chat)
+
+    submit_chat.onclick = function(){
+        console.log("bruh")
+        if(input.value != ""){
+            var data = get_chat_id(input.value)
+            create_chat(data["the_id"] ,input.value)
+            close_popup()
+        }
+        else{
+            console.log("the input has to be more then 0 ")
+        }
+    }
 }
 
 function create_chat(id , chatname){
@@ -164,7 +170,7 @@ async function get_chat_id(name) {
     })
     .then(data => {
         console.log('Message sent successfully:', data);
-        create_chat(data["the_id"] ,name)
+        return data
     })
     .catch(error => {
         console.error('Error sending message:', error);

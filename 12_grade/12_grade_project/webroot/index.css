@@ -129,3 +129,10 @@
     width:70%;
     top: 35%;
 }
+
+.alert_pop_up{
+    background-color: #00000000;
+    color: #7fe40c;
+    position: relative;
+}
+  
