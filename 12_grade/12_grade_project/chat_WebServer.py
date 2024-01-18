@@ -28,7 +28,8 @@ class ChatServer:
         self.clients = set()
         self.response = ""
 
-    def read_file(self, file_name):
+    @staticmethod
+    def read_file(file_name):
         """ Read A File """
         with open(file_name, "rb") as f:
             data = f.read()
@@ -114,8 +115,6 @@ class ChatServer:
 
                 elif "get_id" in path:
                     check_chat = json.loads(data)
-                    print(check_chat["current_user"])
-                    print(check_chat["current_user"])
                     chat_name = check_chat["chat_name"]
                     id_ = random.randint(1000000, 10000000)
                     with open(f"./chats_ids/{check_chat['current_user']}_chat_ids.json", 'r') as file:
@@ -147,7 +146,7 @@ class ChatServer:
                     res_data = json.dumps({"can_login": "false"})
                     if acc["name"].lower() in details_.keys():
                         print(details_)
-                        if acc["pass"] == details_[acc["name"].lower()]:
+                        if acc["pass"] == details_[acc["name"].lower()]["pass"]:
                             res_data = json.dumps({"can_login": "true"})
                     self.response = (HTTP + STATUS_CODES["ok"]
                                      + CONTENT_TYPE + FILE_TYPE["json"]
@@ -166,7 +165,7 @@ class ChatServer:
                     print(data)
                     acc = json.loads(data)
                     if acc["name"].lower() not in details_.keys():
-                        details_[acc["name"].lower()] = acc["pass"]
+                        details_[acc["name"].lower()] = {"pass": acc["pass"]}
                         with open("accounts_details.json", 'w') as file_:
                             json.dump(details_, file_)
                         res_data = json.dumps({"existing": "false"})

@@ -125,17 +125,22 @@ function addchat(){
     submit_chat.className = "submit_chat"
     add_chat_popup.appendChild(submit_chat)
 
-    submit_chat.onclick = function(){
+    submit_chat.onclick = async function () {
         console.log("bruh")
-        if(input.value != ""){
-            var data = get_chat_id(input.value)
-            create_chat(data["the_id"] ,input.value)
-            close_popup()
+        if (input.value !== "") {
+            try {
+                let data = await get_chat_id(input.value);
+                console.log(data);
+                create_chat(data["the_id"], input.value);
+                close_popup();
+            } catch (error) {
+                console.error("Error fetching chat ID:", error);
+            }
+        } else {
+            console.log("the input has to be more than 0 ");
         }
-        else{
-            console.log("the input has to be more then 0 ")
-        }
-    }
+    };
+    
 }
 
 function create_chat(id , chatname){
@@ -155,27 +160,18 @@ function curront_chat_update(id){
 
 async function get_chat_id(name) {
     console.log("getid")
-    fetch(`/get_id`, {
+    let data = await fetch(`/get_id`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({"current_user": currentUsername , 'chat_name': name})
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Message sent successfully:', data);
-        return data
-    })
-    .catch(error => {
-        console.error('Error sending message:', error);
+        body: JSON.stringify({"current_user": currentUsername, 'chat_name': name})
     });
-};
+
+    let x = await data.json();
+    return x;
+}
+
 
 async function get_chats(name) {
     await fetch(`/get_chats?${currentUsername}`, {

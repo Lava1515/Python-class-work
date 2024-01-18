@@ -14,6 +14,7 @@ function change(){
         document.getElementById("comfirm_pass_line").innerHTML = "Comfirm password"
         document.getElementById("comfirm_pass").className ="login_register_mesagebox"
         document.getElementById("eye2").className = "fa fa-eye"
+        document.getElementById("pop_up").innerHTML = ""
     }
 }
 
