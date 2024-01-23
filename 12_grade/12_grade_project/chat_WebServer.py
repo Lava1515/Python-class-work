@@ -179,6 +179,7 @@ class ChatServer:
                 elif "/add_friend" in path:
                     print("add_friend")
                     message = json.loads(data)
+                    res_data = json.dumps({"Add_successfully": "false"})
                     print(message)
                     try:
                         with open("accounts_details.json", 'r') as file:
@@ -188,11 +189,21 @@ class ChatServer:
                         with open("accounts_details.json", 'w') as file_:
                             details_ = {}
                             json.dump({}, file_)
-                    if message["user_to_add"] in details_.keys():
+                    if message["user_to_add"].lower() in details_.keys():
                         print("in data")
-                        res_data = json.dumps({"Add_successfully": "true"})
-                    else:
-                        res_data = json.dumps({"Add_successfully": "false"})
+                        print(details_[message["current_user"].lower()])
+                        try:
+                            print(details_[message["user_to_add"].lower()])
+                            if message["current_user"].lower() != message["user_to_add"].lower() and message["user_to_add"].lower() not in details_[message["current_user"].lower()]["contacts"]:
+                                details_[message["current_user"].lower()]["contacts"].append(message["user_to_add"].lower())
+                                res_data = json.dumps({"Add_successfully": "true"})
+                            else:
+                                print("cant add yourself")
+                        except Exception:
+                            details_[message["current_user"].lower()]["contacts"] = [message["user_to_add"].lower()]
+                            print(details_)
+                        with open("accounts_details.json", 'w') as file_:
+                            json.dump(details_, file_)
                     self.response = (HTTP + STATUS_CODES["ok"]
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(res_data))

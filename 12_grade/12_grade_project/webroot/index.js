@@ -96,7 +96,7 @@ function add_contact(){
             if(data["Add_successfully"] == "false"){
                 let not_user = document.createElement("h3")
                 not_user.className = ""
-                console.log("username not exixt")
+                console.log("username does not exixt")
             }
         })
         .catch(error => {
