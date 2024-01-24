@@ -126,7 +126,6 @@ function addchat(){
     add_chat_popup.appendChild(submit_chat)
 
     submit_chat.onclick = async function () {
-        console.log("bruh")
         if (input.value !== "") {
             try {
                 let data = await get_chat_id(input.value);
@@ -140,7 +139,6 @@ function addchat(){
             console.log("the input has to be more than 0 ");
         }
     };
-    
 }
 
 function create_chat(id , chatname){
@@ -174,27 +172,42 @@ async function get_chat_id(name) {
 
 
 async function get_chats(name) {
-    await fetch(`/get_chats?${currentUsername}`, {
+    let data = await fetch(`/get_chats?${currentUsername}`, {
         method: 'Get',
     })
-    .then(response => {
-        return response.json();
-    })
-    .then(data => {
-        console.log(data)
-        for (const [id, data_] of Object.entries(data)) {
-            if(data_["chat_name"] != undefined){
-                console.log(data_["chat_name"])
-                create_chat(id, data_["chat_name"])
-            }
+    console.log(data);
+    console.log(data.json());
+    for(const [id, data_] of Object.entries(data)) {
+        console.log(data_)
+        if(data_["chat_name"] != undefined){
+            console.log(data_["chat_name"])
+            create_chat(id, data_["chat_name"])
         }
-        return data
-    })
-    .catch(error => {
-        console.error('Error sending message:', error);
-    });
+    }
 };
 
+
+// async function get_chats(name) {
+//     await fetch(`/get_chats?${currentUsername}`, {
+//         method: 'Get',
+//     })
+//     .then(response => {
+//         return response.json();
+//     })
+//     .then(data => {
+//         console.log(data)
+//         for (const [id, data_] of Object.entries(data)) {
+//             if(data_["chat_name"] != undefined){
+//                 console.log(data_["chat_name"])
+//                 create_chat(id, data_["chat_name"])
+//             }
+//         }
+//         return data
+//     })
+//     .catch(error => {
+//         console.error('Error sending message:', error);
+//     });
+// };
 function sendMessage(message) {
     fetch(`/send_messages`, {
         method: 'POST',

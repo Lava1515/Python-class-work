@@ -75,6 +75,7 @@ class ChatServer:
                             chats_data = json.dumps(json.load(file))
                             if chats_data != {}:
                                 chats_data = self.sort_chats(chats_data)
+                                print(chats_data)
                             self.response = (HTTP + STATUS_CODES["ok"]
                                              + CONTENT_TYPE + FILE_TYPE["json"]
                                              + CONTENT_LENGTH + str(len(chats_data))
@@ -189,18 +190,19 @@ class ChatServer:
                         with open("accounts_details.json", 'w') as file_:
                             details_ = {}
                             json.dump({}, file_)
-                    if message["user_to_add"].lower() in details_.keys():
+                    current_user = message["current_user"].lower()
+                    user_to_add = message["user_to_add"].lower()
+                    if user_to_add in details_.keys():
                         print("in data")
-                        print(details_[message["current_user"].lower()])
                         try:
-                            print(details_[message["user_to_add"].lower()])
-                            if message["current_user"].lower() != message["user_to_add"].lower() and message["user_to_add"].lower() not in details_[message["current_user"].lower()]["contacts"]:
-                                details_[message["current_user"].lower()]["contacts"].append(message["user_to_add"].lower())
+                            if current_user != user_to_add and user_to_add not in details_[current_user]["contacts"]:
+                                details_[current_user]["contacts"].append(user_to_add)
                                 res_data = json.dumps({"Add_successfully": "true"})
                             else:
                                 print("cant add yourself")
-                        except Exception:
-                            details_[message["current_user"].lower()]["contacts"] = [message["user_to_add"].lower()]
+                        except Exception as e:
+                            print(e)
+                            details_[current_user]["contacts"] = [user_to_add]
                             print(details_)
                         with open("accounts_details.json", 'w') as file_:
                             json.dump(details_, file_)
@@ -218,7 +220,9 @@ class ChatServer:
     @staticmethod
     def sort_chats(data):
         chat_data = json.loads(data)
+        print(chat_data)
         sorted_items = sorted(chat_data.items(), key=lambda x: x[1]['time'], reverse=True)
+        print("sorted" , sorted_items)
         sorted_dict = dict(sorted_items)
         sorted_json = json.dumps(sorted_dict)
         return sorted_json
