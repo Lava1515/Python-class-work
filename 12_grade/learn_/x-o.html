@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="ticTacToeCanvas" width="300" height="300"></canvas>
+<div id="status"></div>
+
+<script>
+  const canvas = document.getElementById('ticTacToeCanvas');
+  const context = canvas.getContext('2d');
+  const status = document.getElementById('status');
+  const cellSize = 100;
+  let currentPlayer = 'X';
+  let gameBoard = ['', '', '', '', '', '', '', '', ''];
+  let gameActive = true;
+
+  function drawBoard() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const cellIndex = i * 3 + j;
+        const x = j * cellSize;
+        const y = i * cellSize;
+        context.strokeRect(x, y, cellSize, cellSize);
+        context.fillText(gameBoard[cellIndex], x + cellSize / 2, y + cellSize / 2);
+      }
+    }
+  }
+
+  function handleCellClick(event) {
+    if (!gameActive) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const col = Math.floor(x / cellSize);
+    const row = Math.floor(y / cellSize);
+    const index = row * 3 + col;
+
+    if (gameBoard[index] === '') {
+      gameBoard[index] = currentPlayer;
+      drawBoard();
+      checkWinner();
+
+      if (gameActive) {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        status.textContent = `Current player: ${currentPlayer}`;
+      }
+    }
+  }
+
+  function checkWinner() {
+    const winPatterns = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+      [0, 4, 8], [2, 4, 6]             // Diagonals
+    ];
+
+    for (const pattern of winPatterns) {
+      const [a, b, c] = pattern;
+      if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+        status.textContent = `Player ${currentPlayer} wins!`;
+        gameActive = false;
+        return;
+      }
+    }
+
+    if (!gameBoard.includes('')) {
+      status.textContent = 'It\'s a tie!';
+      gameActive = false;
+    }
+  }
+
+  canvas.addEventListener('click', handleCellClick);
+
+  drawBoard();
+  status.textContent = `Current player: ${currentPlayer}`;
+</script>
+
+</body>
+</html>
