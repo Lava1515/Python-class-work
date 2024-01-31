@@ -9,10 +9,11 @@
 }
 
 #chat-box{
+    top: 5vh;
     background-color: rgb(46, 32, 31);
     background-image: url("./images/background.png");
-    border: 1px solid #ccc; padding: 10px; 
-    margin-bottom: 10px;
+    /* border: 1px solid #ccc; padding: 10px;  */
+    /* margin-bottom: 10px; */
     height: 93vh;
     overflow-y:auto;
 }
@@ -99,7 +100,7 @@
 .send_container{
     position: absolute;
     top: 92.9vh;
-    height: 7vh;
+    height: 7.1vh;
     width: 70%;
     background-color: #383f4d;
 }
@@ -135,4 +136,11 @@
     color: #7fe40c;
     position: relative;
 }
-  
+
+.top_chat{
+    position: absolute;
+    height: 5vh;
+    width: 100%;
+    top: 0px;
+    background-color: rgb(27, 31, 27);
+}

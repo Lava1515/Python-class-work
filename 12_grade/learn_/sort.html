@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>After Sorting</title>
+</head>
+<body>
+
+    <script>
+        function sortObjectByTime(inputObject) {
+            console.log(inputObject)
+            const entries = Object.entries(inputObject);
+            entries.sort((a, b) => {
+                const timeA = new Date(a[1].time);
+                const timeB = new Date(b[1].time);
+                return timeA.getTime() - timeB.getTime();
+            });
+            console.log(entries)
+            const sortedObject = Object.fromEntries(entries);
+            console.log(sortedObject)
+            return sortedObject;
+        }
+        
+        // Your input object
+        const inputObject = {
+            "6715164": { "chat_name": "gagag", "time": "2024-01-24 19:03:42.177423" },
+            "1": { "chat_name": "1", "time": "20-01-24 19:03:34.489337" },
+            "5944201": { "chat_name": "agag", "time": "2024-01-24 16:47:34.292127" },
+            "5521540": { "chat_name": "gagag", "time": "2025-01-24 16:45:14.291514" }
+        };
+        console.log(inputObject)
+        // Call the function to get the sorted object
+        const sortedObject = sortObjectByTime(inputObject);
+        console.log(sortedObject)
+        // Display the sorted object on the webpage
+    </script>
+
+</body>
+</html>

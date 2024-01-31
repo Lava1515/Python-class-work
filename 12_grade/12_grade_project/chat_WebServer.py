@@ -69,13 +69,9 @@ class ChatServer:
 
                 elif '/get_chats' in path:
                     name = path.split("?")[-1]
-                    print(name)
                     try:
                         with open(f"./chats_ids/{name}_chat_ids.json", 'r') as file:
                             chats_data = json.dumps(json.load(file))
-                            if chats_data != {}:
-                                chats_data = self.sort_chats(chats_data)
-                                print(chats_data)
                             self.response = (HTTP + STATUS_CODES["ok"]
                                              + CONTENT_TYPE + FILE_TYPE["json"]
                                              + CONTENT_LENGTH + str(len(chats_data))
@@ -91,7 +87,6 @@ class ChatServer:
             elif 'POST' in method:
                 if '/send_messages' in path:
                     message = json.loads(data)
-                    print(message["current_user"])
                     chat_id = message["chat_id"]
                     if chat_id not in self.chats:
                         self.chats[chat_id] = []
@@ -123,6 +118,7 @@ class ChatServer:
                             id_database = json.load(file)
                         except json.decoder.JSONDecodeError:
                             id_database = {}
+                    print(id_database)
                     while id_ in id_database:
                         id_ = random.randint(1000000, 10000000)
                     id_database[id_] = {"chat_name": chat_name, "time": str(datetime.now())}
@@ -146,7 +142,6 @@ class ChatServer:
                     acc = json.loads(data)
                     res_data = json.dumps({"can_login": "false"})
                     if acc["name"].lower() in details_.keys():
-                        print(details_)
                         if acc["pass"] == details_[acc["name"].lower()]["pass"]:
                             res_data = json.dumps({"can_login": "true"})
                     self.response = (HTTP + STATUS_CODES["ok"]
@@ -163,7 +158,6 @@ class ChatServer:
                         with open("accounts_details.json", 'w') as file_:
                             details_ = {}
                             json.dump({}, file_)
-                    print(data)
                     acc = json.loads(data)
                     if acc["name"].lower() not in details_.keys():
                         details_[acc["name"].lower()] = {"pass": acc["pass"]}
@@ -178,10 +172,8 @@ class ChatServer:
                                      + "\r\n\r\n" + res_data)
 
                 elif "/add_friend" in path:
-                    print("add_friend")
                     message = json.loads(data)
                     res_data = json.dumps({"Add_successfully": "false"})
-                    print(message)
                     try:
                         with open("accounts_details.json", 'r') as file:
                             details_ = json.load(file)
@@ -193,7 +185,6 @@ class ChatServer:
                     current_user = message["current_user"].lower()
                     user_to_add = message["user_to_add"].lower()
                     if user_to_add in details_.keys():
-                        print("in data")
                         try:
                             if current_user != user_to_add and user_to_add not in details_[current_user]["contacts"]:
                                 details_[current_user]["contacts"].append(user_to_add)
@@ -217,15 +208,7 @@ class ChatServer:
             client_socket.close()
             self.clients.remove(client_socket)
 
-    @staticmethod
-    def sort_chats(data):
-        chat_data = json.loads(data)
-        print(chat_data)
-        sorted_items = sorted(chat_data.items(), key=lambda x: x[1]['time'], reverse=True)
-        print("sorted" , sorted_items)
-        sorted_dict = dict(sorted_items)
-        sorted_json = json.dumps(sorted_dict)
-        return sorted_json
+
 
     def update_messages_file(self, chat_id):
         filename = f'chats_data/{chat_id}_messages.json'

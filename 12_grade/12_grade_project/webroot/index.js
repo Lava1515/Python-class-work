@@ -175,10 +175,12 @@ async function get_chats(name) {
     let data = await fetch(`/get_chats?${currentUsername}`, {
         method: 'Get',
     })
-    console.log(data);
-    console.log(data.json());
-    for(const [id, data_] of Object.entries(data)) {
-        console.log(data_)
+    data = await data.json();
+    // todo sort data
+    console.log(data)
+    // let data_ = sortObjectByTime(data)
+    // console.log(data_)
+    for(const [id,data_] of Object.entries(data)) {
         if(data_["chat_name"] != undefined){
             console.log(data_["chat_name"])
             create_chat(id, data_["chat_name"])
@@ -186,28 +188,19 @@ async function get_chats(name) {
     }
 };
 
-
-// async function get_chats(name) {
-//     await fetch(`/get_chats?${currentUsername}`, {
-//         method: 'Get',
-//     })
-//     .then(response => {
-//         return response.json();
-//     })
-//     .then(data => {
-//         console.log(data)
-//         for (const [id, data_] of Object.entries(data)) {
-//             if(data_["chat_name"] != undefined){
-//                 console.log(data_["chat_name"])
-//                 create_chat(id, data_["chat_name"])
-//             }
-//         }
-//         return data
-//     })
-//     .catch(error => {
-//         console.error('Error sending message:', error);
+// function sortObjectByTime(inputObject) {
+//     console.log(inputObject)
+//     const entries = Object.entries(inputObject);
+//     entries.sort((a, b) => {
+//         const timeA = new Date(a[1].time);
+//         const timeB = new Date(b[1].time);
+//         return timeA.getTime() - timeB.getTime();
 //     });
-// };
+//     console.log(entries)
+//     const sortedObject = entries
+//     console.log(sortedObject)
+//     return sortedObject;
+// }
 function sendMessage(message) {
     fetch(`/send_messages`, {
         method: 'POST',
