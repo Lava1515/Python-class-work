@@ -13,66 +13,7 @@
 <body>
   <canvas id="drawingCanvas" width="400" height="400"></canvas>
   <canvas id="second_canvas" width="400" height="400"></canvas>
-
-  <script>
-
-    // Get the canvas and its 2D rendering context
-    const canvas1 = document.getElementById('drawingCanvas');
-    const context = canvas1.getContext('2d');
-    const canvas2 = document.getElementById('second_canvas');
-    const context2 = canvas2.getContext('2d');
-    // Flag to indicate whether the user is currently drawing
-    let isDrawing = false;
-
-    // Event listeners for mouse interactions
-    canvas1.addEventListener('mousedown', startDrawing);
-    canvas1.addEventListener('mouseup', stopDrawing);
-    canvas1.addEventListener('mousemove', draw);
-
-    // Function to handle the start of drawing
-    function startDrawing(e) {
-      isDrawing = true;
-      draw(e);
-    }
-
-    // Function to handle the end of drawing
-    function stopDrawing() {
-      isDrawing = false;
-      // Reset the drawing path
-      context.beginPath();
-      context2.beginPath(); // Update path on canvas2 as well
-    }
-
-    // Function to handle drawing based on mouse movement
-    function draw(e) {
-      if (!isDrawing) return;
-
-      // Calculate the coordinates relative to the canvas
-      const rect = canvas1.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      // Create and send drawing data to the server
-      const drawingData = { x, y };
-      drawOnCanvas(context, drawingData);
-      drawOnCanvas(context2, drawingData);
-    // send drawingData
-    }
-
-    // Function to draw on the canvas
-    function drawOnCanvas(_context , data) {
-      // Set drawing attributes
-      _context.lineWidth = 2;
-      _context.lineCap = 'round';
-      _context.strokeStyle = 'black';
-      // Draw a line on the first canvas
-      _context.lineTo(data.x, data.y);
-      _context.stroke();
-      
-      // Start a new path for the next drawing segment
-      _context.beginPath();
-      _context.moveTo(data.x, data.y);
-    }
-  </script>
+  <button id="fetch_data">fetch data</button>
+  <script src="script.js"></script>
 </body>
 </html>

@@ -25,6 +25,8 @@ add_chat.onclick = function() {
     while (add_chat_popup.firstChild) {
         add_chat_popup.removeChild(element.firstChild);
     }
+    
+
     x_btn.innerHTML = "x"
     x_btn.className = "x_btn"
     add_chat_popup.appendChild(x_btn)
