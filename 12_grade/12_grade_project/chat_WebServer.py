@@ -201,6 +201,13 @@ class ChatServer:
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
+                elif "/scrible" in path:
+                    print(data)
+                    res_data = ("")
+                    self.response = (HTTP + STATUS_CODES["ok"]
+                                     + CONTENT_TYPE + FILE_TYPE["json"]
+                                     + CONTENT_LENGTH + str(len(res_data))
+                                     + "\r\n\r\n" + res_data)
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
         finally:
