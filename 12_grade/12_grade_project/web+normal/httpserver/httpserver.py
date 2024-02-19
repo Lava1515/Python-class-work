@@ -1,8 +1,10 @@
 from datetime import datetime
-import random
-import socket
-import json
 import threading
+import random
+import serial
+import socket
+import time
+import json
 
 """Http globals"""
 
@@ -21,8 +23,7 @@ FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "cs
              "json": "application/json\r\n"}
 
 point = []
-
-
+dofek = 0
 class ChatServer:
     def __init__(self):
         self.server_socket = None
@@ -49,7 +50,7 @@ class ChatServer:
                 json.dump(self.chats[chat_id], file)
 
     def handle_client(self, client_socket):
-        global point
+        global point, dofek
         self.clients.add(client_socket)
         try:
             request = client_socket.recv(1024).decode()
@@ -57,30 +58,24 @@ class ChatServer:
             method, path, *_ = request.split()
             if "GET" in method:
                 if path == '/':
-                    path = "./scrible.html"
+                    print("none")
+                    path = "httpserver.html"
                     self.send_response(client_socket, path, "ok")
-                if path != "/":
-                    path = "scrible.js"
+                elif path != "/":
+                    print("path ", path)
+                    path = "httpserver.js"
                     self.send_response(client_socket, path, "ok")
-
-                if "/get_data" in path:
-                    data = point
-                    print(data)
-                    res_data = json.dumps({"drawingData": data})
+                elif "get_data" in path:
+                    print("get_dataaagag")
+                    print(dofek)
+                    res_data = json.dumps(dofek)
                     self.response = (HTTP + STATUS_CODES["ok"]
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
 
             elif 'POST' in method:
-                if "/scrible" in path:
-                    print(data)
-                    point.append(json.loads(data)["drawingData"])
-                    res_data = ("")
-                    self.response = (HTTP + STATUS_CODES["ok"]
-                                     + CONTENT_TYPE + FILE_TYPE["json"]
-                                     + CONTENT_LENGTH + str(len(res_data))
-                                     + "\r\n\r\n" + res_data)
+                pass
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
         finally:
@@ -104,6 +99,7 @@ class ChatServer:
                 http_response = HTTP + STATUS_CODES[status_code] + content_type + content_length + "\r\n"
                 http_response = http_response.encode() + content
                 client_socket.send(http_response)
+                print("sent")
 
         except FileNotFoundError as e:
             print(e)
@@ -125,6 +121,30 @@ class ChatServer:
             self.server_socket.close()
 
 
+def arduino():
+    global dofek
+    # Define the serial port and baud rate
+    serial_port = 'COM3'  # Change this to the appropriate port
+    baud_rate = 9600
+
+    # Connect to the Arduino board
+    ser = serial.Serial(serial_port, baud_rate, timeout=1)
+
+    try:
+        while True:
+            # Wait for a message from Arduino
+            response = ser.readline().decode('utf-8').strip()
+            if response:
+                # if int(response) == 100100:
+                #     response = 10000
+                dofek = int(response) // 55.5 + 40
+    finally:
+        ser.close()  # Close the serial port when done
+
+
 if __name__ == "__main__":
     chat_server = ChatServer()
     chat_server.start_server()
+    t = threading.Thread(target=arduino, daemon=True)
+    t.start()
+    t.join()
