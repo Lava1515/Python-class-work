@@ -83,14 +83,14 @@ async function fetch_bord() {
 //   context2.fill();
 //   context2.closePath();
 // });
-for (let i = 0; i < points.length - 1; i++) {
-  const startPoint = points[i];
-  const endPoint = points[i + 1];
+for (let i = 0; i < data_.length - 1; i++) {
+  const startPoint = data_[i];
+  const endPoint = data_[i + 1];
   
-  context.beginPath();
-  context.moveTo(startPoint.x, startPoint.y);
-  context.lineTo(endPoint.x, endPoint.y);
-  context.stroke();
+  context2.beginPath();
+  context2.moveTo(startPoint.x, startPoint.y);
+  context2.lineTo(endPoint.x, endPoint.y);
+  context2.stroke();
 }
 }
 
