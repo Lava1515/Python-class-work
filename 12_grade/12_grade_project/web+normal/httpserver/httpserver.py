@@ -61,10 +61,7 @@ class ChatServer:
                     print("none")
                     path = "httpserver.html"
                     self.send_response(client_socket, path, "ok")
-                elif path != "/":
-                    print("path ", path)
-                    path = "httpserver.js"
-                    self.send_response(client_socket, path, "ok")
+
                 elif "get_data" in path:
                     print("get_dataaagag")
                     print(dofek)
@@ -73,6 +70,11 @@ class ChatServer:
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
+                elif path != "/":
+                    print("path ", path)
+                    path = "httpserver.js"
+                    self.send_response(client_socket, path, "ok")
+
 
             elif 'POST' in method:
                 pass
@@ -124,7 +126,7 @@ class ChatServer:
 def arduino():
     global dofek
     # Define the serial port and baud rate
-    serial_port = 'COM3'  # Change this to the appropriate port
+    serial_port = 'COM5'  # Change this to the appropriate port
     baud_rate = 9600
 
     # Connect to the Arduino board
@@ -144,7 +146,7 @@ def arduino():
 
 if __name__ == "__main__":
     chat_server = ChatServer()
-    chat_server.start_server()
     t = threading.Thread(target=arduino, daemon=True)
     t.start()
+    chat_server.start_server()
     t.join()
