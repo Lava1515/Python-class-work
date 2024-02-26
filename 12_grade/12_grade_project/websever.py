@@ -48,6 +48,7 @@ def send_data(client_socket, data):
 
 
 def receive_data(client_socket):
+    #todo make it work to more then 1024 and put in while
     data = client_socket.recv(1024)
 
     # Parse WebSocket frame
@@ -80,7 +81,7 @@ def handle_client(client_socket):
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('localhost', 8765))
+    server_socket.bind(('0.0.0.0', 8765))
     server_socket.listen(5)
 
     print("WebSocket server running on port 8765")
