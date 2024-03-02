@@ -6,7 +6,7 @@ import serial
 import socket
 import base64
 import struct
-import time
+# import time
 import json
 
 """Http globals"""
