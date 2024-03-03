@@ -144,3 +144,15 @@
     top: 0px;
     background-color: rgb(27, 31, 27);
 }
+
+#logout{
+    background-color: rgb(201, 182, 158);
+    position: absolute;
+    top: 1%;
+    right: 1%;
+    border-radius: 15px;
+}
+
+#logout:hover{
+    background-color: #3e424b;
+}

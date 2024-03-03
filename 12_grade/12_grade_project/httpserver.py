@@ -1,4 +1,5 @@
 from datetime import datetime
+from protocol import Protocol
 import threading
 import hashlib
 import random
@@ -6,7 +7,7 @@ import serial
 import socket
 import base64
 import struct
-# import time
+import time
 import json
 
 """Http globals"""
@@ -27,7 +28,9 @@ FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "cs
 
 point = []
 dofek = 0
-class ChatServer:
+
+
+class WebServer:
     def __init__(self):
         self.server_socket = None
         self.chats = {}
@@ -53,7 +56,6 @@ class ChatServer:
                 json.dump(self.chats[chat_id], file)
 
     def handle_client(self, client_socket):
-        global point, dofek
         self.clients.add(client_socket)
         try:
             request = client_socket.recv(1024).decode()
@@ -61,24 +63,54 @@ class ChatServer:
             method, path, *_ = request.split()
             if "GET" in method:
                 if path == '/':
-                    print("none")
-                    path = "httpserver.html"
+                    path = "/Login.html"
                     self.send_response(client_socket, path, "ok")
-                elif path != "/":
-                    print("path ", path)
-                    path = "httpserver.js"
+
+                elif path != "/" and "?" not in path:
                     self.send_response(client_socket, path, "ok")
-                elif "get_data" in path:
-                    print("get_dataaagag")
-                    print(dofek)
-                    res_data = json.dumps(dofek)
+
+            elif 'POST' in method:
+                if "/send_details_Login" in path:
+                    try:
+                        with open("accounts_details.json", 'r') as file:
+                            details_ = json.load(file)
+                    except Exception as e:
+                        print(e)
+                        with open("accounts_details.json", 'w') as file_:
+                            details_ = {}
+                            json.dump({}, file_)
+                    acc = json.loads(data)
+                    res_data = json.dumps({"can_login": "false"})
+                    if acc["name"].lower() in details_.keys():
+                        if acc["pass"] == details_[acc["name"].lower()]["pass"]:
+                            res_data = json.dumps({"can_login": "true"})
                     self.response = (HTTP + STATUS_CODES["ok"]
                                      + CONTENT_TYPE + FILE_TYPE["json"]
                                      + CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
 
-            elif 'POST' in method:
-                pass
+                elif "/send_details_Register" in path:
+                    try:
+                        with open("accounts_details.json", 'r') as file:
+                            details_ = json.load(file)
+                    except Exception as e:
+                        print(e)
+                        with open("accounts_details.json", 'w') as file_:
+                            details_ = {}
+                            json.dump({}, file_)
+                    acc = json.loads(data)
+                    if acc["name"].lower() not in details_.keys():
+                        details_[acc["name"].lower()] = {"pass": acc["pass"]}
+                        with open("accounts_details.json", 'w') as file_:
+                            json.dump(details_, file_)
+                        res_data = json.dumps({"existing": "false"})
+                    else:
+                        res_data = json.dumps({"existing": "true"})
+                    self.response = (HTTP + STATUS_CODES["ok"]
+                                     + CONTENT_TYPE + FILE_TYPE["json"]
+                                     + CONTENT_LENGTH + str(len(res_data))
+                                     + "\r\n\r\n" + res_data)
+
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
         finally:
@@ -94,6 +126,7 @@ class ChatServer:
     @staticmethod
     def send_response(client_socket, path, status_code):
         type_ = path.split(".")[-1]
+        path = "webroot/" + path
         try:
             with open(path, 'rb') as file:
                 content = file.read()
@@ -102,7 +135,6 @@ class ChatServer:
                 http_response = HTTP + STATUS_CODES[status_code] + content_type + content_length + "\r\n"
                 http_response = http_response.encode() + content
                 client_socket.send(http_response)
-                print("sent")
 
         except FileNotFoundError as e:
             print(e)
@@ -124,25 +156,109 @@ class ChatServer:
             self.server_socket.close()
 
 
+
+
+
+
+
+
+# Function to handle client connections
+# def handle_client_arduino(client_protocol, address):
+#     print(f"[NEW CONNECTION] {address} connected.")
+#
+#     # Echo loop
+#     while True:
+#         try:
+#             # Receive data from the client
+#             data = client_protocol.get_msg()
+#             if not data:
+#                 print(f"[{address}] disconnected.")
+#                 break
+#
+#             print(f"[{address}] {data.decode('utf-8')}")
+#             # todo: update database
+#
+#             # Echo the received data back to the client
+#             client_protocol.send_msg(data)
+#         except ConnectionError:
+#             print(f"[{address}] connection closed unexpectedly.")
+#             break
+#
+#     # Close the connection
+#     client_protocol.close()
+
+
+def handle_client_arduino(client_protocol, address):
+    print(f"[NEW CONNECTION] {address} connected.")
+
+    # Connect to WebSocket server
+    ws_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ws_socket.connect(('localhost', 8765))
+
+    # Accept WebSocket connection
+    accept_connection(ws_socket)
+
+    # Echo loop
+    while True:
+        try:
+            # Receive data from the client
+            data = client_protocol.get_msg()
+            if not data:
+                print(f"[{address}] disconnected.")
+                break
+
+            print(f"[{address}] {data.decode('utf-8')}")
+
+            # Send data through WebSocket
+            send_data(ws_socket, data.decode('utf-8'))
+
+            # Echo the received data back to the client
+            client_protocol.send_msg(data)
+        except ConnectionError:
+            print(f"[{address}] connection closed unexpectedly.")
+            break
+
+    # Close the WebSocket connection
+    ws_socket.close()
+
+    # Close the connection
+    client_protocol.close()
+
+
+
 def arduino():
-    global dofek
-    # Define the serial port and baud rate
-    serial_port = 'COM3'  # Change this to the appropriate port
-    baud_rate = 9600
+    # Server configuration
+    HOST = '127.0.0.1'
+    PORT = 5555
 
-    # Connect to the Arduino board
-    ser = serial.Serial(serial_port, baud_rate, timeout=1)
+    # Create a TCP socket
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    try:
-        while True:
-            # Wait for a message from Arduino
-            response = ser.readline().decode('utf-8').strip()
-            if response:
-                # if int(response) == 100100:
-                #     response = 10000
-                dofek = int(response) // 55.5 + 40
-    finally:
-        ser.close()  # Close the serial port when done
+    # Create a Protocol instance
+    server_protocol = Protocol(server_socket)
+
+    # Bind the socket to the host and port
+    server_protocol.bind((HOST, PORT))
+
+    # Listen for incoming connections
+    server_protocol.listen()
+
+    print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
+
+    # Main loop to accept incoming connections
+    while True:
+        # Accept a new connection
+        client_protocol, address = server_protocol.accept()
+
+        # Start a new thread to handle the client
+        client_thread = threading.Thread(target=handle_client_arduino, args=(client_protocol, address), daemon= True)
+        client_thread.start()
+
+
+
+
+
+
 
 
 # Define constants
@@ -212,23 +328,17 @@ def handle_client(client_socket):
     accept_connection(client_socket)
 
     while True:
+        response = input("Enter data to send to client: ")
+        send_data(client_socket, response)
         data = receive_data(client_socket)
-        if data:
-            print("Received from client:", data)
-            response = input("Enter data to send to client: ")
-            send_data(client_socket, response)
+        print("Received from client:", data)
+        # todo: recv data from database and send it
 
 
-def main():
+def start_websockets():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('localhost', 8765))
     server_socket.listen(5)
-
-    chat_server = ChatServer()
-    chat_server.start_server()
-    t = threading.Thread(target=arduino, daemon=True)
-    t.start()
-    t.join()
 
     print("WebSocket server running on port 8765")
 
@@ -238,6 +348,26 @@ def main():
 
         client_handler = threading.Thread(target=handle_client, args=(client_socket,))
         client_handler.start()
+
+
+
+
+
+
+
+
+
+def main():
+    webserver = WebServer()
+    web_thread = threading.Thread(target=webserver.start_server, daemon=True)
+    arduino_thread = threading.Thread(target=arduino, daemon=True)
+    websockets_tread = threading.Thread(target=start_websockets, daemon=True)
+    web_thread.start()
+    arduino_thread.start()
+    websockets_tread.start()
+    web_thread.join()
+    arduino_thread.join()
+    websockets_tread.join()
 
 
 if __name__ == "__main__":

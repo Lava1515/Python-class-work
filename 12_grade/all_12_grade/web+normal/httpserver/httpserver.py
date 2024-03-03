@@ -74,8 +74,6 @@ class ChatServer:
                     print("path ", path)
                     path = "httpserver.js"
                     self.send_response(client_socket, path, "ok")
-
-
             elif 'POST' in method:
                 pass
             else:
