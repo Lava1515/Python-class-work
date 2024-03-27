@@ -225,6 +225,30 @@ def handle_client_arduino(client_protocol, address):
     client_protocol.close()
 
 
+def get_bpm():
+    ser = serial.Serial("COM3", 115200, timeout=1)
+    serW = serial.Serial("COM4", 115200, timeout=1)
+    count = 0
+    ok = True
+    now = time.perf_counter()
+    try:
+        while True:
+            response = ser.readline().decode("utf-8").strip()
+            if response:
+                data = response.split(",")[-1]
+                serW.write(data.encode() + "\n".encode())
+                time.sleep(0.02)
+                if ok and int(data) == 347:
+                    then = now
+                    now = time.perf_counter()
+                    count += 1
+                    print("heartbeat", count)
+                    print(60 /(now - then))
+                    ok = False
+                elif not ok and int(data) < 347:
+                    ok = True
+    finally:
+        ser.close()
 
 def arduino():
     # Server configuration
