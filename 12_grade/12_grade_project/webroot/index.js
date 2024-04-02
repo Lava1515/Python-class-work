@@ -1,3 +1,7 @@
+const ip = document.location.origin.split(":")[1]
+console.log(ip)
+const webSocket = new WebSocket("ws:" + ip + ":8765");
+console.log("ws:" + ip + ":8765")
 const currentUsername = sessionStorage.getItem('username');
 const logged_as = document.getElementById('loged_as');
 const logout = document.getElementById('logout');
@@ -9,6 +13,34 @@ logout.onclick = function(){
     sessionStorage.setItem('username',  null);
     window.location.href = "login.html"
 };
+
+
+
+webSocket.onopen = function(event) {
+    console.log("WebSocket connection established.");
+    webSocket.send(currentUsername);
+};
+
+webSocket.onmessage = function(event) {
+    const messageDiv = document.createElement("div");
+    messageDiv.textContent = event.data;
+    console.log(messageDiv.textContent )
+    document.getElementById("messages").appendChild(messageDiv);
+};
+
+function sendMessage() {
+    const messageInput = document.getElementById("messageInput");
+    const message = messageInput.value;
+    webSocket.send(message);
+    messageInput.value = "";
+}
+
+//         // Add event listener for Enter key press
+//         document.getElementById("messageInput").addEventListener("keypress", function(event) {
+//             if (event.key === "Enter") {
+//                 sendMessage();
+//             }
+//         });
 
 // const chatBox = document.getElementById('chat-box');
 // const Send = document.getElementById('Send');

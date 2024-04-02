@@ -43,7 +43,7 @@ def button_click():
     send_option(option)
 
 # Load background image
-background_image = Image.open("webroot/images/beach_sunset.png")
+background_image = Image.open("../../../12_grade_project/webroot/images/beach_sunset.png")
 
 # Create the GUI window
 root = tk.Tk()

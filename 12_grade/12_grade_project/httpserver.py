@@ -29,7 +29,7 @@ FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "cs
 point = []
 dofek = 0
 
-
+cleints = {}
 class WebServer:
     def __init__(self):
         self.server_socket = None
@@ -292,20 +292,17 @@ GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 def accept_connection(client_socket):
     data = client_socket.recv(1024).decode().strip()
     headers = data.split('\r\n')
-
     # Extract key from headers
     key = None
     for header in headers:
         if header.startswith('Sec-WebSocket-Key:'):
             key = header.split(' ')[1]
-
     # Generate response
     response_key = base64.b64encode(hashlib.sha1((key + GUID).encode()).digest()).decode()
     response = "HTTP/1.1 101 Switching Protocols\r\n"
     response += "Upgrade: websocket\r\n"
     response += "Connection: Upgrade\r\n"
     response += "Sec-WebSocket-Accept: " + response_key + "\r\n\r\n"
-
     client_socket.send(response.encode())
 
 
@@ -350,7 +347,9 @@ def receive_data(client_socket):
 
 def handle_client(client_socket):
     accept_connection(client_socket)
-
+    client_name = receive_data(client_socket)
+    cleints[client_name] = client_socket
+    print(cleints)
     while True:
         response = input("Enter data to send to client: ")
         send_data(client_socket, response)
@@ -369,7 +368,6 @@ def start_websockets():
     while True:
         client_socket, addr = server_socket.accept()
         print(f"Connection from {addr}")
-
         client_handler = threading.Thread(target=handle_client, args=(client_socket,))
         client_handler.start()
 

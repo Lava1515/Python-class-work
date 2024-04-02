@@ -1,20 +1,18 @@
-import socket
+import asyncio
+import websockets
 import base64
 import hashlib
 import struct
-import threading
 
-# Define constants
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
+# Store connected clients
+connected = set()
 
-def accept_connection(client_socket):
-    data = client_socket.recv(1024).decode().strip()
-    headers = data.split('\r\n')
-
+async def accept_connection(websocket, path):
     # Extract key from headers
     key = None
-    for header in headers:
+    async for header in websocket:
         if header.startswith('Sec-WebSocket-Key:'):
             key = header.split(' ')[1]
 
@@ -25,10 +23,10 @@ def accept_connection(client_socket):
     response += "Connection: Upgrade\r\n"
     response += "Sec-WebSocket-Accept: " + response_key + "\r\n\r\n"
 
-    client_socket.send(response.encode())
+    # Send response
+    await websocket.send(response)
 
-
-def send_data(client_socket, data):
+async def send_data(websocket, data):
     # Create WebSocket frame
     header = bytearray()
     header.append(0b10000001)  # FIN + Text opcode
@@ -44,55 +42,26 @@ def send_data(client_socket, data):
         header.append(127)
         header.extend(struct.pack("!Q", payload_length))
 
-    client_socket.send(header + payload)
+    # Send frame
+    await websocket.send(header + payload)
 
+async def handler(websocket, path):
+    # Accept connection
+    await accept_connection(websocket, path)
+    # Register client
+    connected.add(websocket)
+    try:
+        async for message in websocket:
+            # Broadcast message to all connected clients
+            for ws in connected:
+                if ws != websocket:  # Avoid sending message back to sender
+                    await send_data(ws, message)
+    finally:
+        # Remove client when connection is closed
+        connected.remove(websocket)
 
-def receive_data(client_socket):
-    #todo make it work to more then 1024 and put in while
-    data = client_socket.recv(1024)
+# Start websocket server
+start_server = websockets.serve(handler, "localhost", 8765)
 
-    # Parse WebSocket frame
-    if len(data) > 6:
-        payload_length = data[1] & 127
-        if payload_length == 126:
-            mask = data[4:8]
-            raw_payload = data[8:]
-        elif payload_length == 127:
-            mask = data[10:14]
-            raw_payload = data[14:]
-        else:
-            mask = data[2:6]
-            raw_payload = data[6:]
-
-        payload = bytearray([raw_payload[i] ^ mask[i % 4] for i in range(len(raw_payload))])
-        return payload.decode()
-
-
-def handle_client(client_socket):
-    accept_connection(client_socket)
-
-    while True:
-        data = receive_data(client_socket)
-        if data:
-            print("Received from client:", data)
-            response = input("Enter data to send to client: ")
-            send_data(client_socket, response)
-
-
-def main():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('0.0.0.0', 8765))
-    server_socket.listen(5)
-
-    print("WebSocket server running on port 8765")
-
-    while True:
-        client_socket, addr = server_socket.accept()
-        print(f"Connection from {addr}")
-
-        client_handler = threading.Thread(target=handle_client, args=(client_socket,))
-        client_handler.start()
-
-
-if __name__ == "__main__":
-    main()
+asyncio.get_event_loop().run_until_complete(start_server)
+asyncio.get_event_loop().run_forever()
