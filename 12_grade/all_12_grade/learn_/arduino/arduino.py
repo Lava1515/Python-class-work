@@ -15,7 +15,7 @@ def mock_heartrate():
     while True:
         ser.write(heartrate[i].encode() + "\n".encode())
         data = heartrate[i]
-        if ok and int(data) == 347:
+        if ok and int(data) == 344:
             then = now
             now = time.perf_counter()
             count += 1
@@ -23,7 +23,7 @@ def mock_heartrate():
             print("heartbeat", count)
             print(60 / (now - then))
             ok = False
-        elif int(data) < 347:
+        elif int(data) < 344:
             ok = True
         time.sleep(0.02)
         i += 1
@@ -49,8 +49,8 @@ def record():
 
 
 def get_bpm():
-    ser = serial.Serial("COM3", 115200, timeout=1)
-    serW = serial.Serial("COM4", 115200, timeout=1)
+    ser = serial.Serial("COM5", 115200, timeout=1)
+    # serW = serial.Serial("COM4", 115200, timeout=1)
     count = 0
     ok = True
     now = time.perf_counter()
@@ -59,7 +59,7 @@ def get_bpm():
             response = ser.readline().decode("utf-8").strip()
             if response:
                 data = response.split(",")[-1]
-                serW.write(data.encode() + "\n".encode())
+                # serW.write(data.encode() + "\n".encode())
                 time.sleep(0.02)
                 if ok and int(data) == 357:
                     then = now

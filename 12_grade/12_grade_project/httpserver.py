@@ -28,7 +28,7 @@ FILE_TYPE = {"html": "text/html;charset=utf-8\r\n", "jpg": "image/jpeg\r\n", "cs
 
 point = []
 dofek = 0
-
+clients = {}
 
 class WebServer:
     def __init__(self):
@@ -194,10 +194,8 @@ def handle_client_arduino(client_protocol, address):
     # Connect to WebSocket server
     ws_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ws_socket.connect(('localhost', 8765))
-
     # Accept WebSocket connection
     accept_connection(ws_socket)
-
     # Echo loop
     while True:
         try:
@@ -206,21 +204,16 @@ def handle_client_arduino(client_protocol, address):
             if not data:
                 print(f"[{address}] disconnected.")
                 break
-
             print(f"[{address}] {data.decode('utf-8')}")
-
             # Send data through WebSocket
             send_data(ws_socket, data.decode('utf-8'))
-
             # Echo the received data back to the client
             client_protocol.send_msg(data)
         except ConnectionError:
             print(f"[{address}] connection closed unexpectedly.")
             break
-
     # Close the WebSocket connection
     ws_socket.close()
-
     # Close the connection
     client_protocol.close()
 
@@ -250,38 +243,27 @@ def get_bpm():
     finally:
         ser.close()
 
+
 def arduino():
     # Server configuration
     HOST = '127.0.0.1'
     PORT = 5555
-
     # Create a TCP socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     # Create a Protocol instance
     server_protocol = Protocol(server_socket)
-
     # Bind the socket to the host and port
     server_protocol.bind((HOST, PORT))
-
     # Listen for incoming connections
     server_protocol.listen()
-
     print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
-
     # Main loop to accept incoming connections
     while True:
         # Accept a new connection
         client_protocol, address = server_protocol.accept()
-
         # Start a new thread to handle the client
         client_thread = threading.Thread(target=handle_client_arduino, args=(client_protocol, address), daemon= True)
         client_thread.start()
-
-
-
-
-
 
 
 
@@ -292,20 +274,17 @@ GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 def accept_connection(client_socket):
     data = client_socket.recv(1024).decode().strip()
     headers = data.split('\r\n')
-
     # Extract key from headers
     key = None
     for header in headers:
         if header.startswith('Sec-WebSocket-Key:'):
             key = header.split(' ')[1]
-
     # Generate response
     response_key = base64.b64encode(hashlib.sha1((key + GUID).encode()).digest()).decode()
     response = "HTTP/1.1 101 Switching Protocols\r\n"
     response += "Upgrade: websocket\r\n"
     response += "Connection: Upgrade\r\n"
     response += "Sec-WebSocket-Accept: " + response_key + "\r\n\r\n"
-
     client_socket.send(response.encode())
 
 
@@ -324,7 +303,6 @@ def send_data(client_socket, data):
     else:
         header.append(127)
         header.extend(struct.pack("!Q", payload_length))
-
     client_socket.send(header + payload)
 
 
@@ -350,18 +328,21 @@ def receive_data(client_socket):
 
 def handle_client(client_socket):
     accept_connection(client_socket)
-
+    clients[receive_data(client_socket)] = client_socket
     while True:
-        response = input("Enter data to send to client: ")
-        send_data(client_socket, response)
+        # response = input("Enter data to send to client: ")
+        # send_data(client_socket, response)
         data = receive_data(client_socket)
+        if data.split(" ")[0] in clients.keys():
+            send_data(clients[data.split(" ")[0]], data)
+            print("sent", data)
         print("Received from client:", data)
         # todo: recv data from database and send it
 
 
 def start_websockets():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('localhost', 8765))
+    server_socket.bind(('0.0.0.0', 8765))
     server_socket.listen(5)
 
     print("WebSocket server running on port 8765")
@@ -372,13 +353,6 @@ def start_websockets():
 
         client_handler = threading.Thread(target=handle_client, args=(client_socket,))
         client_handler.start()
-
-
-
-
-
-
-
 
 
 def main():
@@ -396,4 +370,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
