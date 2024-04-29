@@ -5,7 +5,7 @@ console.log("ws:" + ip + ":8765")
 const currentUsername = sessionStorage.getItem('username');
 const logged_as = document.getElementById('loged_as');
 const logout = document.getElementById('logout');
-
+const copen_chat = document.getElementById('open_chat');
 
 logged_as.innerHTML = "looged in as " + currentUsername
 
@@ -35,12 +35,23 @@ function sendMessage() {
     messageInput.value = "";
 }
 
-//         // Add event listener for Enter key press
-//         document.getElementById("messageInput").addEventListener("keypress", function(event) {
-//             if (event.key === "Enter") {
-//                 sendMessage();
-//             }
-//         });
+// Add event listener for Enter key press
+document.getElementById("messageInput").addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+});
+
+copen_chat.onclick = function(){
+    chat_div = document.getElementById("chat_div")
+    chat_div.className = ("add_chat_animation");
+    if (chat_div.style.display === "none") {
+        chat_div.style.display = "block";
+    } else {
+        chat_div.style.display = "none";
+    }
+}
+
 
 // const chatBox = document.getElementById('chat-box');
 // const Send = document.getElementById('Send');

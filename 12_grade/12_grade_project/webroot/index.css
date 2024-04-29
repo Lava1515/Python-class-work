@@ -1,4 +1,4 @@
-#chats{
+/* #chats{
     position: absolute;
     right: 0%;
     top:0%;
@@ -12,17 +12,11 @@
     top: 5vh;
     background-color: rgb(46, 32, 31);
     background-image: url("./images/background.png");
-    /* border: 1px solid #ccc; padding: 10px;  */
-    /* margin-bottom: 10px; */
     height: 93vh;
     overflow-y:auto;
 }
 
-#add_chat{
-    position: absolute;
-    right: 0%;
-    bottom: 0%;
-}
+
 
 .add_chat_popup{
     width: 0px;
@@ -73,7 +67,6 @@
 
 .submit_chat:hover{
     background-color: rgba(188, 188, 77, 0.744);
-   
 }
 
 .allchats{
@@ -135,7 +128,7 @@
     background-color: #00000000;
     color: #7fe40c;
     position: relative;
-}
+}      
 
 .top_chat{
     position: absolute;
@@ -143,10 +136,10 @@
     width: 100%;
     top: 0px;
     background-color: rgb(27, 31, 27);
-}
+} */
 
 #logout{
-    background-color: rgb(201, 182, 158);
+    background-color: rgb(224, 220, 216);
     position: absolute;
     top: 1%;
     right: 1%;
@@ -154,5 +147,44 @@
 }
 
 #logout:hover{
-    background-color: #3e424b;
+    background-color: rgb(144, 141, 138);
+}
+
+#open_chat{
+    z-index: 1;
+    background-color: rgb(224, 220, 216);
+    position: absolute;
+    right: 1%;
+    bottom: 1%;
+    border-radius: 15px;
+}
+#open_chat:hover{
+    background-color: rgb(144, 141, 138);
+}
+
+.add_chat_animation {
+    position: absolute;
+    top: 0;
+    width: 30%;
+    height: 100vh;
+    overflow-y: auto;
+    background-color: rgb(69, 78, 69);
+    animation: slideFromRight 0.75s forwards; /* Define the animation */
+    display: none; /* Initially hide the chat_div */
+}
+
+@keyframes slideFromRight {
+    from {
+        right: -30%; /* Start from outside the screen */
+    }
+    to {
+        right: 0; /* End at the correct position */
+    }
+}
+
+
+.box{
+    background-color: red;
+    width: 200px;
+    height: 200px;
 }

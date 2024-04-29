@@ -8,27 +8,59 @@ heartrate = ['365', '369', '370', '365', '358', '351', '344', '340', '343', '345
 
 def mock_heartrate():
     ser = serial.Serial("COM4", 115200, timeout=1)
+    last_ten = []
+    avg_bmps = []
+    count = 0
+    avg = 0
+    ok = True
+    now = time.perf_counter()
+    then = now
     i = 0
     count = 0
     ok = True
     now = time.perf_counter()
     while True:
         ser.write(heartrate[i].encode() + "\n".encode())
-        data = heartrate[i]
-        if ok and int(data) == 347:
+        data = int(heartrate[i])
+        # serW.write(response.encode() + b'\n')
+        if len(last_ten) >= 50:
+            last_ten.pop(0)
+        last_ten.append(data)
+        avg = int(sum(last_ten) / len(last_ten))
+        if ok and data >= avg + 3:
             then = now
             now = time.perf_counter()
+            if int(60 / (now - then)) > 220:
+                continue
             count += 1
-            print("time", now, then)
             print("heartbeat", count)
+            if len(avg_bmps) >= 60:
+                avg_bmps.pop(0)
+            avg_bmps.append(60 / (now - then))
             print(60 / (now - then))
+            print("avg", sum(avg_bmps) / len(avg_bmps))
             ok = False
-        elif int(data) < 347:
-            ok = True
-        time.sleep(0.02)
+        elif not ok:
+            now = time.perf_counter()
+            if int(60 / (now - then)) < 220 and data <= avg + 3:
+                ok = True
+        # if ok and data >= avg + 3:
+        #     then = now
+        #     now = time.perf_counter()
+        #     count += 1
+        #     print("heartbeat", count)
+        #     print(60 / (now - then))
+        #     ok = False
+        # if not ok and data <= avg + 3:
+        #     ok = True
+        # if len(last_ten) >= 10:
+        #     last_ten.pop(0)
+        # last_ten.append(data)
+        # avg = sum(last_ten) / len(last_ten)
         i += 1
         if i == len(heartrate):
             i = 0
+        time.sleep(0.02)
 
 
 def record():
@@ -48,38 +80,136 @@ def record():
         ser.close()
 
 
+# def get_bpm():
+#     ser = serial.Serial("COM3", 115200, timeout=1)
+#     serW = serial.Serial("COM4", 115200, timeout=1)
+#     last_ten = []
+#     count = 0
+#     avg = 0
+#     ok = True
+#     now = time.perf_counter()
+#     then = now
+#     try:
+#         while True:
+#             response = ser.readline().decode("utf-8").strip()
+#             if response:
+#                 data = response.split(",")[-1]
+#                 serW.write(data.encode() + "\n".encode())
+#                 time.sleep(0.02)
+#                 data = int(data)
+#                 if len(last_ten) >= 10:
+#                     last_ten.pop(0)
+#                 else:
+#                     if len(last_ten) == 0:
+#                         last_ten.append(data)
+#                     else:
+#                         last_ten.append(data)
+#                 avg = int(sum(last_ten) / len(last_ten))
+#                 if ok and data >= avg + 3:
+#                     then = now
+#                     now = time.perf_counter()
+#                     count += 1
+#                     print("heartbeat", count)
+#                     print(60 / (now - then))
+#                     ok = False
+#                 if not ok and data <= avg + 3:
+#                     ok = True
+#                     last_ten.append(data)
+#                 # if avg == 0:
+#                 #     avg = data
+#                 # avg = int((avg + data)/2)
+#                 # print(avg)
+#                 # if ok:
+#                 #     if 450 > int(data) >= avg + 2 > 350:
+#                 #         then = now
+#                 #         now = time.perf_counter()
+#                 #         count += 1
+#                 #         print("heartbeat", count)
+#                 #         print(60 / (now - then))
+#                 #         ok = False
+#                 # else:
+#                 #     now = time.perf_counter()
+#                 #     if ok and int(data) <= avg + 2:
+#                 #         ok = True
+#                 #     if (now - then) > 3:
+#                 #         ok = True
+#     finally:
+#         ser.close()
+
 def get_bpm():
     ser = serial.Serial("COM3", 115200, timeout=1)
     serW = serial.Serial("COM4", 115200, timeout=1)
+    avg_bmps = []
+    last_ten = []
     count = 0
+    avg = 0
     ok = True
     now = time.perf_counter()
+    then = now
     try:
         while True:
             response = ser.readline().decode("utf-8").strip()
             if response:
-                data = response.split(",")[-1]
-                serW.write(data.encode() + "\n".encode())
-                time.sleep(0.02)
-                if ok and int(data) == 357:
+                data = int(response.split(",")[-1])
+                serW.write(response.encode() + b'\n')
+                if len(last_ten) >= 50:
+                    last_ten.pop(0)
+                last_ten.append(data)
+                avg = int(sum(last_ten) / len(last_ten))
+                if ok and data >= avg + 3:
+                    then = now
+                    now = time.perf_counter()
+                    if int(60 / (now - then)) > 220:
+                        continue
+                    count += 1
+                    print("heartbeat", count)
+                    if len(avg_bmps) >= 60:
+                        avg_bmps.pop(0)
+                    avg_bmps.append(60 / (now - then))
+                    print(60 / (now - then))
+                    print("avg", sum(avg_bmps) / len(avg_bmps))
+                    ok = False
+                elif not ok:
+                    now = time.perf_counter()
+                    if int(60 / (now - then)) < 220 and data <= avg + 3:
+                        ok = True
+    finally:
+        ser.close()
+
+
+def get_bpm_chat():
+    ser = serial.Serial("COM3", 115200, timeout=1)
+    serW = serial.Serial("COM4", 115200, timeout=1)
+    last_ten = []
+    count = 0
+    avg = 0
+    ok = True
+    now = time.perf_counter()
+    then = now
+    try:
+        while True:
+            response = ser.readline().decode("utf-8").strip()
+            if response:
+                data = int(response.split(",")[-1])
+                serW.write(response.encode() + b'\n')
+                if ok and data >= avg + 3:
                     then = now
                     now = time.perf_counter()
                     count += 1
                     print("heartbeat", count)
                     print(60 / (now - then))
                     ok = False
-                elif not ok and int(data) < 357:
+                if not ok and data <= avg + 3:
                     ok = True
+                if len(last_ten) >= 10:
+                    last_ten.pop(0)
+                last_ten.append(data)
+                avg = sum(last_ten) / len(last_ten)
     finally:
         ser.close()
 
 
 if __name__ == '__main__':
-    # t_mock = threading.Thread(target=mock_heartrate, daemon=True)
-    # t_get_bpm = threading.Thread(target=get_bpm, daemon=True)
-    # t_mock.start()
-    # t_get_bpm.start()
-    # t_mock.join()
-    # t_get_bpm.join()
     # mock_heartrate()
+
     get_bpm()

@@ -1,7 +1,5 @@
 import datetime
 
-import pymongo
-
 
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -18,8 +16,8 @@ todo1 = {"name": "Lava", "text": "My first todo!", "status": "open",
 todo2 = {"name": "examle", "text": "My second todo!", "status": "open",
          "tags": ["c++", "coding"], "date": str(datetime.datetime.now())}
 
-todos = db.todos
-# result = todos.insert_one(todo1)  # insert one
+todos = db.chats
+result = todos.insert_one(todo1)  # insert one
 # result = todos.insert_many([todo1, todo2])  # insert multiple
 
 # result = todos.find_one()
@@ -28,8 +26,8 @@ todos = db.todos
 # result = todos.find_one({"name": "examle"})
 # print(result)  # find paticular one
 
-result = todos.find({"name": "Lava"})
-print(result)
+# result = todos.find({"name": "Lava"})
+# print(result)
 
 
 

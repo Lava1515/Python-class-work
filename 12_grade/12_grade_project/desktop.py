@@ -128,25 +128,40 @@ def record():
 def get_bpm():
     ser = serial.Serial("COM3", 115200, timeout=1)
     serW = serial.Serial("COM4", 115200, timeout=1)
+    avg_bmps = []
+    last_ten = []
     count = 0
+    avg = 0
     ok = True
     now = time.perf_counter()
+    then = now
     try:
         while True:
             response = ser.readline().decode("utf-8").strip()
             if response:
-                data = response.split(",")[-1]
-                serW.write(data.encode() + "\n".encode())
-                time.sleep(0.02)
-                if ok and int(data) == 347:
+                data = int(response.split(",")[-1])
+                serW.write(response.encode() + b'\n')
+                if len(last_ten) >= 50:
+                    last_ten.pop(0)
+                last_ten.append(data)
+                avg = int(sum(last_ten) / len(last_ten))
+                if ok and data >= avg + 3:
                     then = now
                     now = time.perf_counter()
+                    if int(60 / (now - then)) > 220:
+                        continue
                     count += 1
                     print("heartbeat", count)
-                    print(60 /(now - then))
+                    if len(avg_bmps) >= 60:
+                        avg_bmps.pop(0)
+                    avg_bmps.append(60 / (now - then))
+                    print(60 / (now - then))
+                    print("avg", sum(avg_bmps) / len(avg_bmps))
                     ok = False
-                elif not ok and int(data) < 347:
-                    ok = True
+                elif not ok:
+                    now = time.perf_counter()
+                    if int(60 / (now - then)) < 220 and data <= avg + 3:
+                        ok = True
     finally:
         ser.close()
 
