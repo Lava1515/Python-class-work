@@ -79,75 +79,34 @@ class WebServer:
                                      + constans.CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
 
-
                 elif "/add_contact" in path:
-
                     data = json.loads(data)
-
                     print(data)
-
                     # Check if the user to be added exists in the database
-
                     friend_filter_query = {"name": data["data"]}
-
                     friend = self.database.accounts_details.find_one(friend_filter_query)
-
                     if friend:
-
                         # Friend found, proceed to add it
-
                         user_filter_query = {"name": data["current_user"]}
-
                         user = self.database.accounts_details.find_one(user_filter_query)
-
                         if user:
-
                             # Check if the friend already exists for the user
-
                             if data["data"] in user.get("fields", []):
-
                                 # Friend already exists
-
                                 res_data = json.dumps({"existing": True})
-
                             else:
-
                                 # Friend does not exist, add it
-
                                 update_query = {
-
                                     "$push": {"fields": data["data"]}
-
                                 }
-
                                 self.database.accounts_details.update_one(user_filter_query, update_query)
-
                                 res_data = json.dumps({"existing": False})
-
                         else:
-
                             # User not found
-
                             res_data = json.dumps({"error": "User not found"})
-
                     else:
-
                         # Friend not found
-
                         res_data = json.dumps({"error": "Friend not found"})
-
-                    self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
-
-                                     + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
-
-                                     + constans.CONTENT_LENGTH + str(len(res_data))
-
-                                     + "\r\n\r\n" + res_data)
-
-                    else:
-                        # User not found
-                        res_data = json.dumps({"error": "User not found"})
-                    print(res_data)
                     self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
                                      + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
                                      + constans.CONTENT_LENGTH + str(len(res_data))
@@ -309,7 +268,7 @@ class Arduino:
                             ok = True
         finally:
             ser.close()
-            
+
     def start_arduino(self):
         # Server configuration
         HOST = '127.0.0.1'
