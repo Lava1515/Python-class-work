@@ -65,46 +65,6 @@ class WebServer:
                                      + constans.CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
 
-                # if "/send_details_Login" in path:
-                #     try:
-                #         with open("accounts_details.json", 'r') as file:
-                #             details_ = json.load(file)
-                #     except Exception as e:
-                #         print(e)
-                #         with open("accounts_details.json", 'w') as file_:
-                #             details_ = {}
-                #             json.dump({}, file_)
-                #     acc = json.loads(data)
-                #     res_data = json.dumps({"can_login": "false"})
-                #     if acc["name"].lower() in details_.keys():
-                #         if acc["pass"] == details_[acc["name"].lower()]["pass"]:
-                #             res_data = json.dumps({"can_login": "true"})
-                #     self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
-                #                      + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
-                #                      + constans.CONTENT_LENGTH + str(len(res_data))
-                #                      + "\r\n\r\n" + res_data)
-
-                # elif "/send_details_Register" in path:
-                #     try:
-                #         with open("accounts_details.json", 'r') as file:
-                #             details_ = json.load(file)
-                #     except Exception as e:
-                #         print(e)
-                #         with open("accounts_details.json", 'w') as file_:
-                #             details_ = {}
-                #             json.dump({}, file_)
-                #     acc = json.loads(data)
-                #     if acc["name"].lower() not in details_.keys():
-                #         details_[acc["name"].lower()] = {"pass": acc["pass"]}
-                #         with open("accounts_details.json", 'w') as file_:
-                #             json.dump(details_, file_)
-                #         res_data = json.dumps({"existing": "false"})
-                #     else:
-                #         res_data = json.dumps({"existing": "true"})
-                #     self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
-                #                      + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
-                #                      + constans.CONTENT_LENGTH + str(len(res_data))
-                #                      + "\r\n\r\n" + res_data)
                 elif "/send_details_Register" in path:
                     acc = json.loads(data)
                     result = self.database.accounts_details.find_one({"name": acc["name"].lower()})
@@ -119,6 +79,88 @@ class WebServer:
                                      + constans.CONTENT_LENGTH + str(len(res_data))
                                      + "\r\n\r\n" + res_data)
 
+
+                elif "/add_contact" in path:
+
+                    data = json.loads(data)
+
+                    print(data)
+
+                    # Check if the user to be added exists in the database
+
+                    friend_filter_query = {"name": data["data"]}
+
+                    friend = self.database.accounts_details.find_one(friend_filter_query)
+
+                    if friend:
+
+                        # Friend found, proceed to add it
+
+                        user_filter_query = {"name": data["current_user"]}
+
+                        user = self.database.accounts_details.find_one(user_filter_query)
+
+                        if user:
+
+                            # Check if the friend already exists for the user
+
+                            if data["data"] in user.get("fields", []):
+
+                                # Friend already exists
+
+                                res_data = json.dumps({"existing": True})
+
+                            else:
+
+                                # Friend does not exist, add it
+
+                                update_query = {
+
+                                    "$push": {"fields": data["data"]}
+
+                                }
+
+                                self.database.accounts_details.update_one(user_filter_query, update_query)
+
+                                res_data = json.dumps({"existing": False})
+
+                        else:
+
+                            # User not found
+
+                            res_data = json.dumps({"error": "User not found"})
+
+                    else:
+
+                        # Friend not found
+
+                        res_data = json.dumps({"error": "Friend not found"})
+
+                    self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
+
+                                     + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
+
+                                     + constans.CONTENT_LENGTH + str(len(res_data))
+
+                                     + "\r\n\r\n" + res_data)
+
+                    else:
+                        # User not found
+                        res_data = json.dumps({"error": "User not found"})
+                    print(res_data)
+                    self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
+                                     + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
+                                     + constans.CONTENT_LENGTH + str(len(res_data))
+                                     + "\r\n\r\n" + res_data)
+
+                elif "/create_group" in path:
+                    data = json.loads(data)
+                    print(data)
+                    res_data = json.dumps({"existing": "true"})
+                    self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
+                                     + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
+                                     + constans.CONTENT_LENGTH + str(len(res_data))
+                                     + "\r\n\r\n" + res_data)
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
         finally:

@@ -6,7 +6,8 @@ const currentUsername = sessionStorage.getItem('username');
 const logged_as = document.getElementById('loged_as');
 const logout = document.getElementById('logout');
 const copen_chat = document.getElementById('open_chat');
-
+const add_button = document.getElementById('add_button');
+const chat_div = document.getElementById("chat_div")
 logged_as.innerHTML = "looged in as " + currentUsername
 
 logout.onclick = function(){
@@ -21,35 +22,129 @@ webSocket.onopen = function(event) {
     webSocket.send(currentUsername);
 };
 
-webSocket.onmessage = function(event) {
-    const messageDiv = document.createElement("div");
-    messageDiv.textContent = event.data;
-    console.log(messageDiv.textContent )
-    document.getElementById("messages").appendChild(messageDiv);
-};
+// webSocket.onmessage = function(event) {
+//     const messageDiv = document.createElement("div");
+//     messageDiv.textContent = event.data;
+//     console.log(messageDiv.textContent )
+//     document.getElementById("messages").appendChild(messageDiv);
+// };
 
-function sendMessage() {
-    const messageInput = document.getElementById("messageInput");
-    const message = messageInput.value;
-    webSocket.send(message);
-    messageInput.value = "";
-}
+// function sendMessage(sendto) {
+//     const messageInput = document.getElementById("messageInput");
+//     const message = {"FromUser":currentUsername, "SendTo": sendto , "message": messageInput.value}
+//     webSocket.send(message);
+//     messageInput.value = "";
+// }
 
-// Add event listener for Enter key press
-document.getElementById("messageInput").addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-        sendMessage();
-    }
-});
+// // Add event listener for Enter key press
+// document.getElementById("messageInput").addEventListener("keypress", function(event) {
+//     if (event.key === "Enter") {
+//         sendMessage();
+//     }
+// });
 
 copen_chat.onclick = function(){
-    chat_div = document.getElementById("chat_div")
-    chat_div.className = ("add_chat_animation");
+    const existingPopup = document.querySelector('.middle_popup');
+    // If it exists, remove it
+    if(existingPopup) {
+        existingPopup.parentNode.removeChild(existingPopup);
+    }
+    for (let i = 0; i < chat_div.children.length; i++) {
+        if (chat_div.children[i].className === "add_popup") {
+            exists = true;
+            chat_div.removeChild(chat_div.children[i]);
+            break;
+        }
+    }
     if (chat_div.style.display === "none") {
         chat_div.style.display = "block";
+        chat_div.classList.remove("slideOutToRight")
+        chat_div.classList.add("slideInFromRight")
     } else {
-        chat_div.style.display = "none";
+        chat_div.classList.remove("slideInFromRight")
+        chat_div.classList.add("slideOutToRight")
+        setTimeout(() => {
+            chat_div.style.display = "none";
+        }, 1000);
     }
+}
+
+add_button.onclick = function(){
+    const popup_div = document.createElement("div");
+    popup_div.className = "add_popup"; // Corrected: popup_div instead of div
+    let exists = false;
+    // Check if popup_div already exists as a child of chat_div
+    for (let i = 0; i < chat_div.children.length; i++) {
+        if (chat_div.children[i].className === "add_popup") {
+            exists = true;
+            chat_div.removeChild(chat_div.children[i]);
+            break;
+        }
+    }
+    if(!exists){
+        chat_div.appendChild(popup_div);
+        const add_contact = document.createElement("button");
+        const create_group = document.createElement("button");
+        add_contact.innerHTML = "add contact"
+        create_group.innerHTML = "create group"
+        add_contact.className = "add_contact"
+        create_group.className = "create group"
+        popup_div.appendChild(add_contact);
+        popup_div.appendChild(create_group);
+        add_contact.onclick= async function(){
+            console.log("add_contact")
+            add_middle_popup("add_contact")
+        }
+        create_group.onclick= async function(){
+            console.log("create_group")
+            add_middle_popup("create_group")
+        }
+
+    }
+    console.log(chat_div.children);
+}
+
+function add_middle_popup(type) {
+    // Check if .middle_popup already exists
+    dict = {"add_contact": "Contact name" , "create_group": "Group name"}
+    const existingPopup = document.querySelector('.middle_popup');
+    // If it exists, remove it
+    if(existingPopup) {
+        existingPopup.parentNode.removeChild(existingPopup);
+    }
+    // Create and append new .middle_popup element
+    const pop_up = document.createElement("div");
+    pop_up.className = "middle_popup";
+    
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = dict[type]
+    pop_up.appendChild(input);
+    
+    const submitButton = document.createElement("button");
+    submitButton.type = "button"; // Set type to "button" to prevent form submission
+    submitButton.textContent = "Submit";
+    submitButton.addEventListener("click", async () => {
+        const inputValue = input.value.trim(); // Get input value and remove leading/trailing spaces
+        if (inputValue) {
+            const data = await fetch(`/${type}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({"current_user": currentUsername, 'data': inputValue})
+            });
+        
+            const response = await data.json();
+            // Handle response as needed
+        } else {
+            // Handle case where input is empty
+            alert("Please enter a value before submitting.");
+        }
+    });
+    pop_up.appendChild(submitButton);
+    
+    document.body.appendChild(pop_up);
 }
 
 

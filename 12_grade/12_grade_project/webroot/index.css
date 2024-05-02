@@ -162,18 +162,24 @@
     background-color: rgb(144, 141, 138);
 }
 
-.add_chat_animation {
+.chat_pop_up {
     position: absolute;
     top: 0;
     width: 30%;
     height: 100vh;
     overflow-y: auto;
     background-color: rgb(69, 78, 69);
-    animation: slideFromRight 0.75s forwards; /* Define the animation */
-    display: none; /* Initially hide the chat_div */
 }
 
-@keyframes slideFromRight {
+.slideInFromRight {
+    animation: slideIn 0.75s forwards, fadeIn 0.75s forwards;
+}
+
+.slideOutToRight {
+    animation: slideOut 0.75s forwards, fadeOut 0.75s forwards;
+}
+
+@keyframes slideIn {
     from {
         right: -30%; /* Start from outside the screen */
     }
@@ -182,9 +188,43 @@
     }
 }
 
+@keyframes slideOut {
+    from {
+        right: 0; /* Start from the correct position */
+    }
+    to {
+        right: -30%; /* End outside the screen */
+    }
+}
 
-.box{
+
+.add_popup{
+    background-color: rgb(255, 0, 0);
+    position: relative;
+    z-index: 3;
+    top: -3.473%;
+    left: 10%;
+    width:70%;
+}
+
+.middle_popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     background-color: red;
     width: 200px;
     height: 200px;
+    animation: slideIn_popup 0.75s ease-in-out forwards;
+}
+
+@keyframes slideIn_popup {
+    0% {
+        opacity: 0;
+        transform: translate(100%, -100%);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
 }
