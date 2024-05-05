@@ -1,15 +1,17 @@
+import base64
+import hashlib
+import json
+import socket
+import struct
+import threading
+import time
+
+import serial
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-from protocol import Protocol
-import threading
+
 import constans
-import hashlib
-import serial
-import socket
-import base64
-import struct
-import time
-import json
+from protocol import Protocol
 
 
 class WebServer:
@@ -20,25 +22,8 @@ class WebServer:
         self.clients = set()
         self.response = ""
 
-    @staticmethod
-    def read_file(file_name):
-        """ Read A File """
-        with open(file_name, "rb") as f:
-            data = f.read()
-        return data
-
-    def load_chat_messages(self, chat_id):
-        filename = f'chats_data/{chat_id}_messages.json'
-        try:
-            with open(filename, 'r') as file:
-                self.chats[chat_id] = json.load(file)
-        except FileNotFoundError:
-            # If the file doesn't exist, create a new one with numbering
-            self.chats[chat_id] = []
-            with open(filename, 'w') as file:
-                json.dump(self.chats[chat_id], file)
-
     def handle_client(self, client_socket):
+        res_data = ""
         self.clients.add(client_socket)
         try:
             request = client_socket.recv(1024).decode()
@@ -49,9 +34,19 @@ class WebServer:
                     path = "/Login.html"
                     self.send_response(client_socket, path, "ok")
 
+                elif "/get_coaches" in path:
+                    names = self.database.Admins.find({}, {"name": 1})
+                    namelist = [name["name"] for name in names]
+                    print(namelist)
+                    res_data = json.dumps(namelist)
+
                 elif path != "/" and "?" not in path:
                     self.send_response(client_socket, path, "ok")
 
+                self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
+                                 + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
+                                 + constans.CONTENT_LENGTH + str(len(res_data))
+                                 + "\r\n\r\n" + res_data)
             elif 'POST' in method:
                 if "/send_details_Login" in path:
                     acc = json.loads(data)
@@ -60,10 +55,6 @@ class WebServer:
                     res_data = json.dumps({"can_login": "false"})
                     if result is not None and result["password"] == acc["pass"]:
                         res_data = json.dumps({"can_login": "true"})
-                    self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
-                                     + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
-                                     + constans.CONTENT_LENGTH + str(len(res_data))
-                                     + "\r\n\r\n" + res_data)
 
                 elif "/send_details_Register" in path:
                     acc = json.loads(data)
@@ -74,52 +65,62 @@ class WebServer:
                         res_data = json.dumps({"existing": "false"})
                     else:
                         res_data = json.dumps({"existing": "true"})
-                    self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
-                                     + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
-                                     + constans.CONTENT_LENGTH + str(len(res_data))
-                                     + "\r\n\r\n" + res_data)
+
+                elif "/AdminRegister" in path:
+                    acc = json.loads(data)
+                    result_admin = self.database.Admins.find_one({"name": acc["name"].lower()})
+                    result_accounts = self.database.accounts_details.find_one({"name": acc["name"].lower()})
+                    if result_admin is None and result_accounts is None:
+                        self.database.Admins.insert_one(
+                            {"name": acc["name"].lower(), "password": acc["pass"]})
+                        res_data = json.dumps({"existing": "false"})
+                    else:
+                        res_data = json.dumps({"existing": "true"})
 
                 elif "/add_contact" in path:
+                    user_filter_query = None
                     data = json.loads(data)
                     print(data)
                     # Check if the user to be added exists in the database
-                    friend_filter_query = {"name": data["data"]}
+                    friend_filter_query = {"name": data["data"].lower()}
                     friend = self.database.accounts_details.find_one(friend_filter_query)
                     if friend:
                         # Friend found, proceed to add it
-                        user_filter_query = {"name": data["current_user"]}
-                        user = self.database.accounts_details.find_one(user_filter_query)
-                        if user:
-                            # Check if the friend already exists for the user
-                            if data["data"] in user.get("fields", []):
-                                # Friend already exists
-                                res_data = json.dumps({"existing": True})
-                            else:
-                                # Friend does not exist, add it
-                                update_query = {
-                                    "$push": {"fields": data["data"]}
-                                }
-                                self.database.accounts_details.update_one(user_filter_query, update_query)
-                                res_data = json.dumps({"existing": False})
+                        try:
+                            user_filter_query = {"name": data["current_user"].lower()}
+                            user = self.database.accounts_details.find_one(user_filter_query)
+                        except AttributeError:
+                            user = None
+                        print(user)
+                        if user == friend:
+                            res_data = json.dumps({"error": "Cannot add yourself"})
                         else:
-                            # User not found
-                            res_data = json.dumps({"error": "User not found"})
+                            if user and data["current_user"] is not None:
+                                # Check if the friend already exists for the user
+                                if data["data"].lower() in user.get("fields", []):
+                                    # Friend already exists
+                                    res_data = json.dumps({"existing": True})
+                                else:
+                                    # Friend does not exist, add it
+                                    update_query = {"$push": {"fields": data["data"].lower()}}
+                                    self.database.accounts_details.update_one(user_filter_query, update_query)
+                                    res_data = json.dumps({"existing": False})
+                            else:
+                                # User not found
+                                print("User not found")
+                                res_data = json.dumps({"error": "User not found"})
                     else:
                         # Friend not found
                         res_data = json.dumps({"error": "Friend not found"})
-                    self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
-                                     + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
-                                     + constans.CONTENT_LENGTH + str(len(res_data))
-                                     + "\r\n\r\n" + res_data)
 
                 elif "/create_group" in path:
                     data = json.loads(data)
                     print(data)
                     res_data = json.dumps({"existing": "true"})
-                    self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
-                                     + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
-                                     + constans.CONTENT_LENGTH + str(len(res_data))
-                                     + "\r\n\r\n" + res_data)
+                self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
+                                 + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
+                                 + constans.CONTENT_LENGTH + str(len(res_data))
+                                 + "\r\n\r\n" + res_data)
             else:
                 self.response = "HTTP/1.1 404 Not Found\r\n\r\n"
         finally:
@@ -141,7 +142,8 @@ class WebServer:
                 content = file.read()
                 content_type = constans.CONTENT_TYPE + constans.FILE_TYPE[type_]
                 content_length = constans.CONTENT_LENGTH + str(len(content)) + "\r\n"
-                http_response = constans.HTTP + constans.STATUS_CODES[status_code] + content_type + content_length + "\r\n"
+                http_response = constans.HTTP + constans.STATUS_CODES[
+                    status_code] + content_type + content_length + "\r\n"
                 http_response = http_response.encode() + content
                 client_socket.send(http_response)
 
@@ -154,6 +156,7 @@ class WebServer:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('0.0.0.0', 5000))
         self.server_socket.listen(5)
+        print("Register as an Admin http://127.0.0.1:5000/AdminRegister.html")
         print("Server is running on http://127.0.0.1:5000")
 
         try:
@@ -287,7 +290,8 @@ class Arduino:
             # Accept a new connection
             client_protocol, address = server_protocol.accept()
             # Start a new thread to handle the client
-            client_thread = threading.Thread(target=self.handle_client_arduino, args=(client_protocol, address), daemon=True)
+            client_thread = threading.Thread(target=self.handle_client_arduino, args=(client_protocol, address),
+                                             daemon=True)
             client_thread.start()
 
 
@@ -296,6 +300,7 @@ class WebSocket:
         self.database = DataBase
         self.GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         self.clients = {}
+
     # Define constants
 
     def accept_connection(self, client_socket):

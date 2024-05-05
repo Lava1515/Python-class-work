@@ -1,67 +1,122 @@
-import time
-import serial
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import threading
-from collections import deque
+import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import serial
+
+data_write = 100
 
 
-def animate(i, dataList):
-    arduinoData_string = ser.readline().decode('ascii')  # Decode received Arduino data as a formatted string
-    print(arduinoData_string)  # 'i' is an incrementing variable based upon frames = x argument
-    arduinoData_string = arduinoData_string.split(",")[-1]
+def get_bpm(serW):
+    global data_write
+    ser = serial.Serial("COM3", 115200, timeout=1)
+    avg_bmps = []
+    last_ten = []
+    count = 0
+    avg = 0
+    ok = True
+    now = time.perf_counter()
+    then = now
     try:
-        arduinoData_float = float(arduinoData_string)  # Convert to float
-        dataList.append(arduinoData_float)  # Add to the list holding the fixed number of points to animate
-    except ValueError:  # Pass if data point is bad
-        pass
+        while True:
+            response = ser.readline().decode("utf-8").strip()
+            if response:
+                data = int(response.split(",")[-1])
+                serW.write(response.encode() + b'\n')
+                data_write = data  # Update global variable with the latest data
+                if len(last_ten) >= 50:
+                    last_ten.pop(0)
+                last_ten.append(data)
+                avg = int(sum(last_ten) / len(last_ten))
+                if ok and data >= avg + 3:
+                    then = now
+                    now = time.perf_counter()
+                    if int(60 / (now - then)) > 220:
+                        continue
+                    count += 1
+                    print("heartbeat", count)
+                    if len(avg_bmps) >= 60:
+                        avg_bmps.pop(0)
+                    avg_bmps.append(60 / (now - then))
+                    print(60 / (now - then))
+                    print("avg", sum(avg_bmps) / len(avg_bmps))
+                    ok = False
+                elif not ok:
+                    now = time.perf_counter()
+                    if int(60 / (now - then)) < 220 and data <= avg + 3:
+                        ok = True
+    finally:
+        ser.close()
 
-    dataList = deque(
-        list(dataList)[-40:])  # Fix the list size so that the animation plot 'window' is x number of points
 
-    ax.clear()  # Clear last data frame
-    ax.plot(dataList)  # Plot new data frame
+def live_plot():
+    global data_write
+    # Initialize empty lists to store x and y data
+    x_data = []
+    y_data = []
 
-    ax.set_ylim([340, 355])  # Set Y axis limit of plot
-    ax.set_title("Arduino Data")  # Set title of figure
-    ax.set_ylabel("Value")  # Set title of y axis
+    # Initialize figure and axis
+    fig, ax = plt.subplots()
 
+    # Initialize plot with empty data
+    line, = ax.plot([], [], lw=2)
 
-def data_read_thread(ser, dataList):
+    # Set initial x-axis limits
+    x_count = 0
+    x_max = 60
+    ax.set_xlim(x_count, x_max)
+
+    # Function to update the plot
+    def update_plot(new_y):
+        nonlocal x_data, y_data, x_count, x_max
+
+        # Append new data points
+        x_data.append(x_count)
+        y_data.append(new_y)
+
+        # If more than 60 data points, remove the oldest ones
+        if len(x_data) > 60:
+            x_data.pop(0)
+            y_data.pop(0)
+
+        # Update x and y data of the plot
+        line.set_data(x_data, y_data)
+
+        # Update x-axis limits
+        x_count += 1
+        if x_max - 10 == x_count:
+            x_max += 1
+        ax.set_xlim(x_max - 60, x_max)
+
+        # Calculate the average of the last 60 data points
+        avg_y = np.mean(y_data)
+
+        # Set y-axis limit dynamically based on the average
+        ax.set_ylim(avg_y - 15, avg_y + 25)
+
+        # Redraw the plot
+        fig.canvas.draw()
+        plt.pause(0.00001)
+
+    # Generate initial data for the plot
+    update_plot(data_write)
+
+    # Update the plot periodically with the latest data
     while True:
-        arduinoData_string = ser.readline().decode('ascii')  # Decode received Arduino data as a formatted string
-        print(arduinoData_string)  # 'i' is an incrementing variable based upon frames = x argument
-        arduinoData_string = arduinoData_string.split(",")[-1]
-        try:
-            arduinoData_float = float(arduinoData_string)  # Convert to float
-            dataList.append(arduinoData_float)  # Add to the list holding the fixed number of points to animate
-        except ValueError:  # Pass if data point is bad
-            pass
-
-        dataList = deque(
-            list(dataList)[-40:])  # Fix the list size so that the animation plot 'window' is x number of points
-        time.sleep(0.1)
+        update_plot(data_write)
 
 
 def main():
-    # Create empty list variable for later use
-    dataList = deque(maxlen=40)
+    serW = serial.Serial("COM4", 115200, timeout=1)
 
-    fig = plt.figure()  # Create Matplotlib plots fig is the 'higher level' plot window
-    ax = fig.add_subplot(111)  # Add subplot to main fig window
+    # Start get_bpm function in a thread
+    get_bpm_thread = threading.Thread(target=get_bpm, args=(serW,))
+    get_bpm_thread.start()
 
-    ser = serial.Serial("COM3",
-                        115200)  # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
-    time.sleep(2)  # Time delay for Arduino Serial initialization
+    # Call live_plot function in the main thread
+    live_plot()
 
-    # Matplotlib Animation Function that takes care of real-time plot.
-    # Note that 'fargs' parameter is where we pass in our dataList.
-    ani = animation.FuncAnimation(fig, animate, fargs=(dataList,), interval=100)
 
-    # Create a separate thread for reading data from the serial port
-    thread = threading.Thread(target=data_read_thread, args=(dataList,))
-    thread.daemon = True
-    thread.start()
-
-    plt.show()  # Keep Matplotlib plot persistent on screen until it is closed
-    ser.close()  # Close Serial connection when plot is closed
+if __name__ == "__main__":
+    main()

@@ -136,6 +136,7 @@ function add_middle_popup(type) {
             });
         
             const response = await data.json();
+            console.log(response)
             // Handle response as needed
         } else {
             // Handle case where input is empty
@@ -143,7 +144,6 @@ function add_middle_popup(type) {
         }
     });
     pop_up.appendChild(submitButton);
-    
     document.body.appendChild(pop_up);
 }
 

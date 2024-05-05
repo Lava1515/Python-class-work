@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12 grade proj</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+    <div id="box_wrap">
+      <div class="login-box">
+          <h2 id="title">Register as a coach</h2>
+          <form>
+            <div class="user-box">
+              <input type="text" name="" required="" class="login_register_mesagebox" id="UsernameInput">
+              <label id="Username" class="shadow_name">Username</label>
+            </div>
+            <div class="user-box">
+              <input type="password" name="" required="" class="login_register_mesagebox" id="password">
+              <label class="shadow_name" >Password</label>
+              <i class="fa fa-eye" id="eye1" onmouseover="change_eye_slash1()" onmouseout="change_eye1()"></i>
+            </div>
+            <div class="user-box">
+              <input type="password" name="" required="" class="login_register_mesagebox" id="comfirm_pass">
+              <label class="shadow_name" id="comfirm_pass_line">Comfirm password</label>
+              <i class="fa fa-eye" onmouseover="change_eye_slash2()" onmouseout="change_eye2()" id="eye2"></i>
+            </div>
+            <div class="invisble" id="pop_up"></div>
+            <a class="hover" id="submit">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              Submit
+            </a>
+          </form>
+        </div>
+    </div>
+    <script src="AdminRegister.js"></script>
+</body>
+</html>

@@ -220,3 +220,35 @@ z-index: 1;
   position: relative;
 }
 
+
+.coaches_containers {
+  flex-wrap: wrap;
+  gap: 10px; /* Adjust the gap between divs as needed */
+  padding: 10px;
+  display: inline-flex;
+  margin-right: 10px;
+  border: 3px groove black;
+  border-radius: 20px ;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+#coachesContainer {
+  text-align: center; /* Center align the content */
+  margin-top: 20px; /* Adjust margin as needed */
+}
+
+#coachTitle {
+  position: absolute;
+  left: 40%;;
+  background-color: #4e4f38;
+  color: #fff;
+  text-shadow: 0 0 10px #df1313, 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #484448, 0 0 70px #1b1616, 0 0 80px #ff00de, 0 0 100px #ff00de, 0 0 150px #ff00de;
+  font-size: 36px;
+  font-weight: bold;
+  padding: 10px 20px;
+  border: 3px solid black;
+  border-radius: 15px;
+  display: inline-block;
+  position: relative;
+}
+

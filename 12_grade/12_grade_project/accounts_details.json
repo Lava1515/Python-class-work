@@ -1,1 +1,21 @@
-{"lava": {"pass": "1"}, "lava1": {"pass": "1", "contacts": ["lava"]}, "riahi": {"pass": "1", "contacts": ["lava", "lava1"]}, "shsfndsj": {"pass": "1"}}
+{
+  "lava": {
+    "pass": "1"
+  },
+  "lava1": {
+    "pass": "1",
+    "contacts": [
+      "lava"
+    ]
+  },
+  "riahi": {
+    "pass": "1",
+    "contacts": [
+      "lava",
+      "lava1"
+    ]
+  },
+  "shsfndsj": {
+    "pass": "1"
+  }
+}

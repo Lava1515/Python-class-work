@@ -99,7 +99,10 @@ function send_details(method_, name, pass) {
         let pop_up = document.getElementById("pop_up")
         if(data["can_login"] =="true"){
             sessionStorage.setItem('username', name);
-            window.location.href = "index.html"
+            if (method_ =="Login")
+                window.location.href = "index.html"
+            if (method_ =="Register")
+                window.location.href = "ChooseCoach.html"
         }
         else if(data["can_login"] =="false"){
             pop_up.innerHTML = "Username or pasword are not matching"
@@ -111,7 +114,10 @@ function send_details(method_, name, pass) {
         }
         else if (data["existing"] =="false"){
             sessionStorage.setItem('username', name);
-            window.location.href = "index.html"
+            if (method_ =="Login")
+                window.location.href = "index.html"
+            if (method_ =="Register")
+                window.location.href = "ChooseCoach.html"
         }
         console.log(data)
         console.log('Message sent successfully:', data);
