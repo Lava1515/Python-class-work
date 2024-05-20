@@ -304,5 +304,5 @@ def get_bpm_chat():
 
 
 if __name__ == '__main__':
-    # mock_heartrate()
-    get_bpm()
+    mock_heartrate()
+    # get_bpm()

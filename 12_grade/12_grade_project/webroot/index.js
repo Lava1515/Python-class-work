@@ -8,7 +8,41 @@ const logout = document.getElementById('logout');
 const copen_chat = document.getElementById('open_chat');
 const add_button = document.getElementById('add_button');
 const chat_div = document.getElementById("chat_div")
+
+GetPermissions()
+
 logged_as.innerHTML = "looged in as " + currentUsername
+
+
+async function GetPermissions(){
+    let data = await fetch(`/get_Permissions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"current_user": currentUsername})
+    });
+
+    const response = await data.json();
+    console.log(response)
+    if (response["Permissions"] == "Coach"){
+        GetTrainers()
+    }
+}   
+async function GetTrainers(){
+    let data = await fetch(`/get_trainers`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"current_user": currentUsername})
+    });
+
+    const response = await data.json();
+    console.log(response)
+
+}
+
 
 logout.onclick = function(){
     sessionStorage.setItem('username',  null);

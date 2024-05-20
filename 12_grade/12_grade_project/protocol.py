@@ -42,8 +42,8 @@ class Protocol:
         length = self.recv_all(self.LENGTH_FIELD_SIZE)
         return self.recv_all(int(length))
 
-    def send_msg(self, data: bytes):
+    def send_msg(self, data):
         try:
-            self.socket.sendall(str(len(data)).zfill(self.LENGTH_FIELD_SIZE).encode() + data)
+            self.socket.sendall(str(len(data)).zfill(self.LENGTH_FIELD_SIZE).encode() + str(data).encode())
         except Exception:
             raise

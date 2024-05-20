@@ -32,16 +32,16 @@ class WebServer:
             if "GET" in method:
                 if path == '/':
                     path = "/Login.html"
-                    self.send_response(client_socket, path, "ok")
+                    self.send_files(client_socket, path, "ok")
 
                 elif "/get_coaches" in path:
-                    names = self.database.Admins.find({}, {"name": 1})
-                    namelist = [name["name"] for name in names]
+                    names = self.database.accounts_details.find({"Permissions": "Coach"})
+                    namelist = [name["name"].lower() for name in names]
                     print(namelist)
                     res_data = json.dumps(namelist)
 
                 elif path != "/" and "?" not in path:
-                    self.send_response(client_socket, path, "ok")
+                    self.send_files(client_socket, path, "ok")
 
                 self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
                                  + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
@@ -61,62 +61,92 @@ class WebServer:
                     result = self.database.accounts_details.find_one({"name": acc["name"].lower()})
                     if result is None:
                         self.database.accounts_details.insert_one(
-                            {"name": acc["name"].lower(), "password": acc["pass"]})
+                            {"name": acc["name"].lower(), "password": acc["pass"], "Permissions": "Trainer"})
                         res_data = json.dumps({"existing": "false"})
                     else:
                         res_data = json.dumps({"existing": "true"})
 
                 elif "/AdminRegister" in path:
                     acc = json.loads(data)
-                    result_admin = self.database.Admins.find_one({"name": acc["name"].lower()})
-                    result_accounts = self.database.accounts_details.find_one({"name": acc["name"].lower()})
-                    if result_admin is None and result_accounts is None:
-                        self.database.Admins.insert_one(
-                            {"name": acc["name"].lower(), "password": acc["pass"]})
+                    all_names = self.database.accounts_details.find_one({"name": acc["name"].lower()})
+                    if all_names is None:
+                        self.database.accounts_details.insert_one(
+                            {"name": acc["name"].lower(), "password": acc["pass"], "Permissions": "Coach"})
                         res_data = json.dumps({"existing": "false"})
                     else:
                         res_data = json.dumps({"existing": "true"})
 
                 elif "/add_contact" in path:
-                    user_filter_query = None
                     data = json.loads(data)
-                    print(data)
-                    # Check if the user to be added exists in the database
-                    friend_filter_query = {"name": data["data"].lower()}
-                    friend = self.database.accounts_details.find_one(friend_filter_query)
+                    friend_name = data["data"].lower()
+                    current_user_name = data["current_user"].lower()
+
+                    # Check if the friend exists in the database
+                    friend = self.database.accounts_details.find_one({"name": friend_name})
                     if friend:
-                        # Friend found, proceed to add it
-                        try:
-                            user_filter_query = {"name": data["current_user"].lower()}
-                            user = self.database.accounts_details.find_one(user_filter_query)
-                        except AttributeError:
-                            user = None
-                        print(user)
-                        if user == friend:
-                            res_data = json.dumps({"error": "Cannot add yourself"})
-                        else:
-                            if user and data["current_user"] is not None:
-                                # Check if the friend already exists for the user
-                                if data["data"].lower() in user.get("fields", []):
-                                    # Friend already exists
-                                    res_data = json.dumps({"existing": True})
-                                else:
-                                    # Friend does not exist, add it
-                                    update_query = {"$push": {"fields": data["data"].lower()}}
-                                    self.database.accounts_details.update_one(user_filter_query, update_query)
-                                    res_data = json.dumps({"existing": False})
+                        # Check if the current user exists in the database
+                        user = self.database.accounts_details.find_one({"name": current_user_name})
+                        if user:
+                            # Check if the friend already exists for the user
+                            if friend_name in user.get("friends", []):
+                                res_data = json.dumps({"existing": True})
                             else:
-                                # User not found
-                                print("User not found")
-                                res_data = json.dumps({"error": "User not found"})
+                                # Add the friend to the user's friends list
+                                self.database.accounts_details.update_one({"name": current_user_name},
+                                                                          {"$push": {"friends": friend_name}})
+                                res_data = json.dumps({"existing": False})
+                        else:
+                            res_data = json.dumps({"error": "User not found"})
                     else:
-                        # Friend not found
-                        res_data = json.dumps({"error": "Friend not found"})
+                        res_data = json.dumps({"error": "Contact not found"})
 
                 elif "/create_group" in path:
+                    # :todo crate group
                     data = json.loads(data)
                     print(data)
                     res_data = json.dumps({"existing": "true"})
+
+                elif "/SetCoach" in path:
+                    data = json.loads(data)
+                    coach_name = data["coach"].lower()
+                    current_user_name = data["current_user"].lower()
+
+                    # Check if coach exists
+                    coach = self.database.accounts_details.find_one({"name": coach_name, "Permissions": "Coach"})
+                    if coach:
+                        # Check if current user exists
+                        user = self.database.accounts_details.find_one({"name": current_user_name})
+                        if user:
+                            # Check if current user already has a coach
+                            if not user.get("coach"):
+                                # Update current user's coach and add current user to coach's trainers
+                                self.database.accounts_details.update_one(
+                                    {"name": current_user_name},
+                                    {"$set": {"coach": coach_name}}
+                                )
+                                self.database.accounts_details.update_one(
+                                    {"name": coach_name},
+                                    {"$push": {"trainers": current_user_name}}
+                                )
+                                res_data = json.dumps({"Added": True})
+                            else:
+                                res_data = json.dumps({"error": "This user already has a coach"})
+                        else:
+                            res_data = json.dumps({"error": "User not found"})
+                    else:
+                        res_data = json.dumps({"error": "Coach not found"})
+
+                elif "/get_Permissions" in path:
+                    data = json.loads(data)
+                    account = self.database.accounts_details.find_one({"name": data["current_user"].lower()})
+                    print(data)
+                    res_data = json.dumps({"Permissions": account["Permissions"]})
+
+                elif "/get_trainers" in path:
+                    data = json.loads(data)
+                    account = self.database.accounts_details.find_one({"name": data["current_user"].lower()})
+                    print(data)
+                    res_data = json.dumps({"Trainers": account["trainers"]})
                 self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
                                  + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
                                  + constans.CONTENT_LENGTH + str(len(res_data))
@@ -134,7 +164,7 @@ class WebServer:
             json.dump(self.chats[chat_id], file)
 
     @staticmethod
-    def send_response(client_socket, path, status_code):
+    def send_files(client_socket, path, status_code):
         type_ = path.split(".")[-1]
         path = "webroot/" + path
         try:
@@ -195,104 +225,47 @@ class WebServer:
 
 
 class Arduino:
-    def __init__(self, DataBase):
+    def __init__(self, DataBase, WebSocketInstance):
         self.database = DataBase
-        self.heart_rate: int = 0
-        self.WS = WebSocket(self.database)
-
-    def handle_client_arduino(self, client_protocol, address):
-        print(f"[NEW CONNECTION] {address} connected.")
-
-        # Connect to WebSocket server
-        ws_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ws_socket.connect(('localhost', 8765))
-
-        # Accept WebSocket connection
-        self.WS.accept_connection(ws_socket)
-
-        # Echo loop
-        while True:
-            try:
-                # Receive data from the client
-                data = client_protocol.get_msg()
-                if not data:
-                    print(f"[{address}] disconnected.")
-                    break
-                print(f"[{address}] {data.decode('utf-8')}")
-                # Send data through WebSocket
-                self.WS.send_data(ws_socket, data.decode('utf-8'))
-                # Echo the received data back to the client
-                client_protocol.send_msg(data)
-            except ConnectionError:
-                print(f"[{address}] connection closed unexpectedly.")
-                break
-        # Close the WebSocket connection
-        ws_socket.close()
-        # Close the connection
-        client_protocol.close()
-
-    @staticmethod
-    def get_bpm():
-        ser = serial.Serial("COM3", 115200, timeout=1)
-        serW = serial.Serial("COM4", 115200, timeout=1)
-        avg_bmps = []
-        last_ten = []
-        count = 0
-        avg = 0
-        ok = True
-        now = time.perf_counter()
-        then = now
-        try:
-            while True:
-                response = ser.readline().decode("utf-8").strip()
-                if response:
-                    data = int(response.split(",")[-1])
-                    serW.write(response.encode() + b'\n')
-                    if len(last_ten) >= 50:
-                        last_ten.pop(0)
-                    last_ten.append(data)
-                    avg = int(sum(last_ten) / len(last_ten))
-                    if ok and data >= avg + 3:
-                        then = now
-                        now = time.perf_counter()
-                        if int(60 / (now - then)) > 220:
-                            continue
-                        count += 1
-                        print("heartbeat", count)
-                        if len(avg_bmps) >= 60:
-                            avg_bmps.pop(0)
-                        avg_bmps.append(60 / (now - then))
-                        print(60 / (now - then))
-                        print("avg", sum(avg_bmps) / len(avg_bmps))
-                        ok = False
-                    elif not ok:
-                        now = time.perf_counter()
-                        if int(60 / (now - then)) < 220 and data <= avg + 3:
-                            ok = True
-        finally:
-            ser.close()
+        self.WS = WebSocketInstance
+        self.protocol = Protocol()
 
     def start_arduino(self):
         # Server configuration
-        HOST = '127.0.0.1'
+        HOST = '0.0.0.0'
         PORT = 5555
-        # Create a TCP socket
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # Create a Protocol instance
-        server_protocol = Protocol(server_socket)
-        # Bind the socket to the host and port
-        server_protocol.bind((HOST, PORT))
-        # Listen for incoming connections
-        server_protocol.listen()
-        print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
-        # Main loop to accept incoming connections
+        try:
+            self.protocol.bind((HOST, PORT))
+            self.protocol.listen()
+            print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
+            while True:
+                client_protocol, addr = self.protocol.accept()
+                print(f"[CONNECTED] Connection from {addr}")
+                self.handle_client(client_protocol)
+        except KeyboardInterrupt:
+            print("[STOPPING] Server is stopping")
+        finally:
+            self.protocol.close()
+
+    def handle_client(self, client_protocol):
         while True:
-            # Accept a new connection
-            client_protocol, address = server_protocol.accept()
-            # Start a new thread to handle the client
-            client_thread = threading.Thread(target=self.handle_client_arduino, args=(client_protocol, address),
-                                             daemon=True)
-            client_thread.start()
+            try:
+                method, data = client_protocol.get_msg().decode().split(":")
+                if "Login" in method:
+                    print("logi")
+                    username, password = data.split(",")
+                    result = self.database.accounts_details.find_one({"name": username.lower()})
+                    if result is not None and result["password"] == password:
+                        client_protocol.send_msg("Success")
+                        print("Success")
+                    else:
+                        client_protocol.send_msg("Failure")
+                        print("Failure")
+                elif method == "bpm":
+                    pass
+            except Exception as e:
+                print(f"Error handling client: {e}")
+                break
 
 
 class WebSocket:
@@ -387,7 +360,7 @@ class Server:
         self.DataBase = self.open_database()
         self.web_server = WebServer(self.DataBase)
         self.web_socket = WebSocket(self.DataBase)
-        self.arduino = Arduino(self.DataBase)
+        self.arduino = Arduino(self.DataBase, self.web_socket)
 
     @staticmethod
     def open_database():
@@ -399,14 +372,14 @@ class Server:
 
     def start_server(self):
         web_thread = threading.Thread(target=self.web_server.start_server, daemon=True)
-        arduino_thread = threading.Thread(target=self.arduino.start_arduino, daemon=True)
         websockets_tread = threading.Thread(target=self.web_socket.start_websockets, daemon=True)
+        arduino_thread = threading.Thread(target=self.arduino.start_arduino, daemon=True)
         web_thread.start()
-        arduino_thread.start()
         websockets_tread.start()
+        arduino_thread.start()
         web_thread.join()
-        arduino_thread.join()
         websockets_tread.join()
+        arduino_thread.join()
 
 
 def main():
