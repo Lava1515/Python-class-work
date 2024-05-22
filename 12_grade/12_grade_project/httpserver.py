@@ -1,10 +1,6 @@
-import base64
-import hashlib
 import json
 import socket
-import struct
 import threading
-import time
 
 import serial
 from pymongo.mongo_client import MongoClient
@@ -12,6 +8,7 @@ from pymongo.server_api import ServerApi
 
 import constans
 from protocol import Protocol
+from WebSockets import Web_Socket
 
 
 class WebServer:
@@ -239,111 +236,60 @@ class Arduino:
             self.protocol.listen()
             print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
             while True:
-                client_protocol, addr = self.protocol.accept()
+                client_socket, addr = self.protocol.accept()
                 print(f"[CONNECTED] Connection from {addr}")
-                self.handle_client(client_protocol)
+                client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
+                client_handler.start()
+
         except KeyboardInterrupt:
             print("[STOPPING] Server is stopping")
         finally:
             self.protocol.close()
 
-    def handle_client(self, client_protocol):
+    def handle_client(self, client_socket):
         while True:
             try:
-                method, data = client_protocol.get_msg().decode().split(":")
-                if "Login" in method:
+                method, data = client_socket.get_msg().decode().split(":")
+                if "check_user" in method:
                     print("logi")
                     username, password = data.split(",")
                     result = self.database.accounts_details.find_one({"name": username.lower()})
                     if result is not None and result["password"] == password:
-                        client_protocol.send_msg("Success")
+                        client_socket.send_msg("Success")
                         print("Success")
                     else:
-                        client_protocol.send_msg("Failure")
+                        client_socket.send_msg("Failure")
                         print("Failure")
                 elif method == "bpm":
-                    pass
+                    print(data)
             except Exception as e:
                 print(f"Error handling client: {e}")
                 break
 
 
-class WebSocket:
-    def __init__(self, DataBase):
-        self.database = DataBase
-        self.GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+class WebSocket(Web_Socket):
+    def __init__(self):
+        super().__init__()
         self.clients = {}
 
-    # Define constants
-
-    def accept_connection(self, client_socket):
-        data = client_socket.recv(1024).decode().strip()
-        headers = data.split('\r\n')
-        # Extract key from headers
-        key = None
-        for header in headers:
-            if header.startswith('Sec-WebSocket-Key:'):
-                key = header.split(' ')[1]
-        # Generate response
-        response_key = base64.b64encode(hashlib.sha1((key + self.GUID).encode()).digest()).decode()
-        response = "HTTP/1.1 101 Switching Protocols\r\n"
-        response += "Upgrade: websocket\r\n"
-        response += "Connection: Upgrade\r\n"
-        response += "Sec-WebSocket-Accept: " + response_key + "\r\n\r\n"
-        client_socket.send(response.encode())
-
-    @staticmethod
-    def send_data(client_socket, data):
-        # Create WebSocket frame
-        header = bytearray()
-        header.append(0b10000001)  # FIN + Text opcode
-        payload = bytearray(data.encode())
-        payload_length = len(payload)
-        if payload_length <= 125:
-            header.append(payload_length)
-        elif payload_length <= 65535:
-            header.append(126)
-            header.extend(struct.pack("!H", payload_length))
-        else:
-            header.append(127)
-            header.extend(struct.pack("!Q", payload_length))
-        client_socket.send(header + payload)
-
-    @staticmethod
-    def receive_data(client_socket):
-        data = client_socket.recv(1024)
-
-        # Parse WebSocket frame
-        if len(data) > 6:
-            payload_length = data[1] & 127
-            if payload_length == 126:
-                mask = data[4:8]
-                raw_payload = data[8:]
-            elif payload_length == 127:
-                mask = data[10:14]
-                raw_payload = data[14:]
-            else:
-                mask = data[2:6]
-                raw_payload = data[6:]
-
-            payload = bytearray([raw_payload[i] ^ mask[i % 4] for i in range(len(raw_payload))])
-            return payload.decode()
-
-    def handle_client(self, client_socket):
+    def handle_client(self, client_socket, addr):
         self.accept_connection(client_socket)
         client_name = self.receive_data(client_socket)
         self.clients[client_name] = client_socket
         print(self.clients)
         while True:
-            data = self.receive_data(client_socket)
-            if data.split(' ')[0] in self.clients.keys():
-                self.send_data(self.clients[data.split(' ')[0]], data)
-            print("Received from client:", data)
-            # todo: recv data from database and send it
+            try:
+                data = self.receive_data(client_socket)
+                # if data.split(' ')[0] in self.clients.keys():
+                #     self.send_data(self.clients[data.split(' ')[0]], data)
+                print("Received from client:", data)
+            except Exception:  # there's 3 different exceptions
+                print(f"the client {addr} disconnected")
+                break
 
     def start_websockets(self):
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.bind(('localhost', 8765))
+        server_socket = socket.socket()
+        server_socket.bind(('0.0.0.0', 8765))
         server_socket.listen(5)
 
         print("WebSocket server running on port 8765")
@@ -351,7 +297,7 @@ class WebSocket:
         while True:
             client_socket, addr = server_socket.accept()
             print(f"Connection from {addr}")
-            client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
+            client_handler = threading.Thread(target=self.handle_client, args=(client_socket, addr))
             client_handler.start()
 
 
@@ -359,8 +305,9 @@ class Server:
     def __init__(self):
         self.DataBase = self.open_database()
         self.web_server = WebServer(self.DataBase)
-        self.web_socket = WebSocket(self.DataBase)
+        self.web_socket = WebSocket()
         self.arduino = Arduino(self.DataBase, self.web_socket)
+        self.users = {}
 
     @staticmethod
     def open_database():

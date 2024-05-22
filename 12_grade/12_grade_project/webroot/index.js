@@ -8,6 +8,7 @@ const logout = document.getElementById('logout');
 const copen_chat = document.getElementById('open_chat');
 const add_button = document.getElementById('add_button');
 const chat_div = document.getElementById("chat_div")
+const open_arduino = document.getElementById("open_arduino")
 
 GetPermissions()
 
@@ -77,6 +78,23 @@ webSocket.onopen = function(event) {
 //     }
 // });
 
+open_arduino.onclick = function(){
+    const LocalWebSocket = new WebSocket('ws://127.0.0.1:8080');
+    const random_str = generateRandomString()
+    console.log(random_str)
+    webSocket.send("random_str: " + random_str)
+
+    LocalWebSocket.onopen = function(event) {
+        console.log("WebSocket connection established.");
+        LocalWebSocket.send(currentUsername + ip + ":8765" +"//" +  random_str);
+
+    };
+    
+    LocalWebSocket.onmessage = function(event) {
+        console.log(event.data);
+    };
+}
+
 copen_chat.onclick = function(){
     const existingPopup = document.querySelector('.middle_popup');
     // If it exists, remove it
@@ -136,6 +154,16 @@ add_button.onclick = function(){
 
     }
     console.log(chat_div.children);
+}
+
+function generateRandomString(length = 50) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?';
+    let randomString = '';
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        randomString += characters[randomIndex];
+    }
+    return randomString;
 }
 
 function add_middle_popup(type) {

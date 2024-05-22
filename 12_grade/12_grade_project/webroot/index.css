@@ -138,30 +138,32 @@
     background-color: rgb(27, 31, 27);
 } */
 
-#logout{
+.button{
     background-color: rgb(224, 220, 216);
     position: absolute;
-    top: 1%;
-    right: 1%;
     border-radius: 15px;
 }
 
-#logout:hover{
+.button:hover{
     background-color: rgb(144, 141, 138);
+}
+
+#logout{   
+    top: 1%;
+    right: 1%;
 }
 
 #open_chat{
     z-index: 1;
-    background-color: rgb(224, 220, 216);
-    position: absolute;
     right: 1%;
     bottom: 1%;
-    border-radius: 15px;
-}
-#open_chat:hover{
-    background-color: rgb(144, 141, 138);
 }
 
+
+#open_arduino{
+    left: 1%;
+    bottom: 1%;
+}
 .chat_pop_up {
     position: absolute;
     top: 0;

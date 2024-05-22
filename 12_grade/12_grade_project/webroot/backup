@@ -1,4 +1,4 @@
-import multiprocessing
+i have this code :
 import socket
 import threading
 import time
@@ -6,10 +6,8 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter.simpledialog import askstring
 
-import multiprocessing
 import matplotlib.pyplot as plt
 import numpy as np
-import time
 import serial
 
 from protocol import Protocol
@@ -83,7 +81,6 @@ class DesktopApp:
         self.socket = _socket
         self.data_write = 0
         self.threads = []
-        self.parent_conn, self.child_conn = multiprocessing.Pipe()
 
         self.root = tk.Tk()
         self.root.title("12 Grade Project")
@@ -101,14 +98,12 @@ class DesktopApp:
         return ip
 
     def send_bpm(self, bpm):
-        try:
-            self.bpm_label.config(text=bpm)
-            self.socket.send_msg("bpm:" + bpm)
-        except Exception as e:
-            print(e)
+        self.bpm_label.config(text=bpm)
+        self.socket.send_msg("bpm:" + bpm)
 
     def mock_heartrate(self):
-        heartrate = ['365']
+        heartrate = ["100"]
+
         last_ten = []
         avg_bmps = []
         now = time.perf_counter()
@@ -118,7 +113,7 @@ class DesktopApp:
         ok = True
         while True:
             data = int(heartrate[i])
-            self.parent_conn.send(data)
+            self.data_write = data
             if len(last_ten) >= 50:
                 last_ten.pop(0)
             last_ten.append(data)
@@ -133,6 +128,7 @@ class DesktopApp:
                 if len(avg_bmps) >= 60:
                     avg_bmps.pop(0)
                 avg_bmps.append(60 / (now - then))
+                print(60 / (now - then))
                 self.send_bpm(str(int(60 / (now - then))))
                 print("avg", sum(avg_bmps) / len(avg_bmps))
                 ok = False
@@ -160,8 +156,7 @@ class DesktopApp:
                 if response:
                     data = int(response.split(",")[-1])
                     serW.write(response.encode() + b'\n')
-                    self.data_write = data
-                    self.parent_conn.send(data)
+                    self.data_write = data  # Update global variable with the latest data
                     if len(last_ten) >= 50:
                         last_ten.pop(0)
                     last_ten.append(data)
@@ -188,54 +183,81 @@ class DesktopApp:
             ser.close()
 
     def run_functionality(self):
+        # Call live_plot function in the main thread
+        # live_plot_thread = threading.Thread(target=self.add_bmp_window, args=(self.username,))
+        # live_plot_thread.start()
+        # self.threads.append(live_plot_thread)
         self.additional_bmp_window()
+
+        # Start get_bpm function in a thread
         get_bpm_thread = threading.Thread(target=self.mock_heartrate)
         get_bpm_thread.start()
         self.threads.append(get_bpm_thread)
 
-        live_plot_process = multiprocessing.Process(target=self.live_plot, args=(self.child_conn,))
-        live_plot_process.start()
+        self.live_plot()
+        # live_plot_thread = threading.Thread(target=self.live_plot)
+        # live_plot_thread.start()
+        # self.threads.append(live_plot_thread)
 
-    @staticmethod
-    def live_plot(pipe_conn):
+        # self.mock_heartrate()
+
+    def live_plot(self):
+        # Initialize empty lists to store x and y data
         x_data = []
         y_data = []
 
+        # Initialize figure and axis
         fig, ax = plt.subplots()
+
+        # Initialize plot with empty data
         line, = ax.plot([], [], lw=2)
+
+        # Set initial x-axis limits
         x_count = 0
         x_max = 60
         ax.set_xlim(x_count, x_max)
 
+        # Function to update the plot
         def update_plot():
             nonlocal x_data, y_data, x_count, x_max
 
-            while pipe_conn.poll():
-                data_point = pipe_conn.recv()
-                x_data.append(x_count)
-                y_data.append(data_point)
+            # Append new data points
+            x_data.append(x_count)
+            y_data.append(self.data_write)
 
-                if len(x_data) > 60:
-                    x_data.pop(0)
-                    y_data.pop(0)
+            # If more than 60 data points, remove the oldest ones
+            if len(x_data) > 60:
+                x_data.pop(0)
+                y_data.pop(0)
 
-                line.set_data(x_data, y_data)
-                x_count += 1
-                if x_max - 10 == x_count:
-                    x_max += 1
-                ax.set_xlim(x_max - 60, x_max)
+            # Update x and y data of the plot
+            line.set_data(x_data, y_data)
 
-                avg_y = np.mean(y_data)
-                ax.set_ylim(avg_y - 15, avg_y + 25)
-                fig.canvas.draw()
-                plt.pause(0.00001)
+            # Update x-axis limits
+            x_count += 1
+            if x_max - 10 == x_count:
+                x_max += 1
+            ax.set_xlim(x_max - 60, x_max)
 
+            # Calculate the average of the last 60 data points
+            avg_y = np.mean(y_data)
+
+            # Set y-axis limit dynamically based on the average
+            ax.set_ylim(avg_y - 15, avg_y + 25)
+
+            # Redraw the plot
+            fig.canvas.draw()
+            plt.pause(0.00001)
+
+        # Generate initial data for the plot
         update_plot()
+
+        # Update the plot periodically with the latest data
         while True:
             update_plot()
 
     def additional_bmp_window(self):
-        logedas = tk.Label(self.root, text="Logged as, " + self.username, font=("Arial", 14), bg="#6b0202", fg="white")
+        logedas = tk.Label(self.root, text="Loged as, " + self.username, font=("Arial", 14), bg="#6b0202", fg="white")
         logedas.pack(pady=5)
         bmp_label = tk.Label(self.root, text="Bpm", font=("Arial", 14), bg="#6b0202", fg="white")
         bmp_label.pack(pady=5)
@@ -252,3 +274,28 @@ class DesktopApp:
 
 if __name__ == "__main__":
     Client()
+
+
+
+and this error :
+Exception in thread Thread-1 (mock_heartrate):
+Traceback (most recent call last):
+  File "C:\Users\Lava\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1052, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Lava\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 989, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\Lava\PycharmProjects\Python-class-work\12_grade\12_grade_project\login.py", line 232, in mock_heartrate
+    self.send_bpm(str(int(60 / (now - then))))
+  File "C:\Users\Lava\PycharmProjects\Python-class-work\12_grade\12_grade_project\login.py", line 100, in send_bpm
+    self.bpm_label.config(text=bpm)
+  File "C:\Users\Lava\AppData\Local\Programs\Python\Python312\Lib\tkinter\__init__.py", line 1702, in configure
+    return self._configure('configure', cnf, kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lava\AppData\Local\Programs\Python\Python312\Lib\tkinter\__init__.py", line 1692, in _configure
+    self.tk.call(_flatten((self._w, cmd)) + self._options(cnf))
+RuntimeError: main thread is not in main loop
+
+
+
+
+i think it can be fixed if u put the live_plot in a difrent procces can u write me acode of that and pls write the whole code
