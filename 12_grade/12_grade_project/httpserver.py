@@ -102,6 +102,7 @@ class WebServer:
                         self.database.chats.insert_one({"name": "CHATS_NAMES_IDS"})
 
                     id_ = self.get_chat_id(chats)
+                    self.database.chats.insert_one({"id": str(id_)})
                     self.database.chats.update_one({"name": "CHATS_NAMES_IDS"},
                                                    {"$set": {id_: data["chat_name"]}})
                     self.database.accounts_details.update_one({"name": data["current_user"].lower()},
@@ -177,6 +178,20 @@ class WebServer:
                     chats = {}
                     chat_data = self.database.chats.find_one({"id": data["id"]})
                     res_data = json.dumps(chat_data)
+
+                elif "/send_message" in path:
+                    chat = self.database.chats.find_one({"id": data["id"]})
+                    if chat:
+                        # Update the chat document with the new field
+                        self.database.chats.update_one(
+                            {"id": data["id"]},
+                            {"$set": {data["message"]: data["current_user"]}}
+                        )
+                        res_data = json.dumps({"sent": "true"})
+
+                elif "/get_messages" in path:
+                    chat = self.database.chats.find_one({"id": data["id"]})
+                    print(chat)
 
                 self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
                                  + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]

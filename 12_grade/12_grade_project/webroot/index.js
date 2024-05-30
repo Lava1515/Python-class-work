@@ -1,7 +1,7 @@
-const ip = document.location.origin.split(":")[1]
-console.log(ip)
+const ip = document.location.origin.split(":")[1];
+console.log(ip);
 const webSocket = new WebSocket("ws:" + ip + ":8765");
-console.log("ws:" + ip + ":8765")
+console.log("ws:" + ip + ":8765");
 const currentUsername = sessionStorage.getItem('username');
 const logged_as = document.getElementById('loged_as');
 const logout = document.getElementById('logout');
@@ -10,10 +10,11 @@ const add_button = document.getElementById('add_button');
 const chat_div = document.getElementById("chat_div")
 const open_arduino = document.getElementById("open_arduino")
 const selectElement = document.getElementById("dates")
-
+const send_messages = document.getElementById("Send")
 const ctx = document.getElementById('myChart').getContext('2d');
 const numColumns = 100;
 let startIndex = 0;
+let currentChatId = "";
 
 // Generate labels from 100 to 1 (assuming numColumns is 100)
 const labels = Array.from({ length: numColumns }, (_, i) => numColumns - i);
@@ -103,13 +104,27 @@ document.getElementById('prev').addEventListener('click', () => {
 });
 
 
-
+send_messages.onclick = async function(){
+    let message = document.getElementById("message-input")
+    console.log(currentChatId)
+    console.log(message.value)
+    
+    let data = await fetch(`send_message`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"id": currentChatId,"current_user": currentUsername, "message":message.value})
+    });
+    const response = await data.json();
+    console.log(response)
+}
 
 open_arduino.onclick = function(){
     const random_str = generateRandomString()
     webSocket.send("random_str: " + random_str)
     const LocalWebSocket = new WebSocket('ws://127.0.0.1:8080');
-    
+
     LocalWebSocket.onopen = function(event) {
         console.log("WebSocket connection established.");
         LocalWebSocket.send(currentUsername + ip + ":8765" +"//" +  random_str);
@@ -118,6 +133,9 @@ open_arduino.onclick = function(){
     
     LocalWebSocket.onmessage = function(event) {
         console.log(event.data);
+    };
+    LocalWebSocket.onerror = function(event) {
+        alert('Couldnt connect to Arduino');
     };
 }
 
@@ -328,27 +346,31 @@ function create_chats(chat_dict) {
     // Iterate through the keys (chat IDs) in the chat_dict
     for (const id in chat_dict) {
         if (chat_dict.hasOwnProperty(id)) {
-            // Get the chat name corresponding to the current ID
-            const chatname = chat_dict[id];
-            // Create a new div element for the chat
-            const chat = document.createElement("div");
-            // Set the inner HTML to the chat name
-            chat.innerHTML = chatname;
-            // Set the class name for styling
-            chat.className = "chat";
-            // Set a unique ID for the chat
-            chat.id = id;
-            // Append the chat element to the chats container
-            chats.appendChild(chat);
-            // Add a click event listener to switch chats
-            chat.addEventListener("click", function() {
-                switch_chat(id); // Pass the id to the switch_chat function
-            });
+            // Check if a chat with this ID already exists
+            if (!document.getElementById(id)) {
+                // Get the chat name corresponding to the current ID
+                const chatname = chat_dict[id];
+                // Create a new div element for the chat
+                const chat = document.createElement("div");
+                // Set the inner HTML to the chat name
+                chat.innerHTML = chatname;
+                // Set the class name for styling
+                chat.className = "chat";
+                // Set a unique ID for the chat
+                chat.id = id;
+                // Append the chat element to the chats container
+                chats.appendChild(chat);
+                // Add a click event listener to switch chats
+                chat.addEventListener("click", function() {
+                    switch_chat(id); // Pass the id to the switch_chat function
+                });
+            }
         }
     }
 }
 async function switch_chat(id) {
     console.log("Switching to chat:", id);
+    currentChatId = id
     const backButton = document.getElementById("back_button");
     const chats_container = document.getElementById("chats_container")
     const in_chat_container =  document.getElementById("in_chat_container")
@@ -368,7 +390,18 @@ async function switch_chat(id) {
         in_chat_container.style.display = "none";
     }
 }
-
+async function get_messages(){
+    let data = await fetch(`get_messages`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"id": currentChatId})
+    });
+    const response = await data.json();
+    console.log(response)
+    return response
+}
 // const chatBox = document.getElementById('chat-box');
 // const Send = document.getElementById('Send');
 // const messageInput = document.getElementById('message-input');

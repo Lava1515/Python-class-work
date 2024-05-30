@@ -261,7 +261,6 @@ body{
    background-color: #6b6554;
 }
 #messages{
-    top: 5vh;
-    height: 93vh;
+    height: 85vh;
     overflow-y:auto;
 }
