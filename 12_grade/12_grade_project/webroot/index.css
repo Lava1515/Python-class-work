@@ -138,6 +138,12 @@
     background-color: rgb(27, 31, 27);
 } */
 
+body{
+    background: url("images/index.png");
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size:cover;
+}
 .button{
     background-color: rgb(224, 220, 216);
     position: absolute;
@@ -154,11 +160,10 @@
 }
 
 #open_chat{
-    z-index: 1;
+    z-index: 3;
     right: 1%;
     bottom: 1%;
 }
-
 
 #open_arduino{
     left: 1%;
@@ -171,6 +176,7 @@
     height: 100vh;
     overflow-y: auto;
     background-color: rgb(69, 78, 69);
+    z-index: 1;
 }
 
 .slideInFromRight {
@@ -202,10 +208,10 @@
 
 .add_popup{
     background-color: rgb(255, 0, 0);
-    position: relative;
+    position: absolute;
     z-index: 3;
-    top: -3.473%;
-    left: 10%;
+    top: 35px;
+    left: 40px;
     width:70%;
 }
 
@@ -229,4 +235,33 @@
         opacity: 1;
         transform: translate(-50%, -50%);
     }
+}
+
+.chart-container {
+    position: relative;
+    left: 10%;
+    width: 90%;
+    height: 80vh;
+}
+
+#myChart {
+    width: 100%;
+}
+
+.chat{
+    color: white;
+    position: relative;
+    width: 100%;
+    height: 5%;
+    align-items: center;
+    text-align: center;
+    border-bottom: 1px solid #3f3c31;
+}
+.chat:hover{
+   background-color: #6b6554;
+}
+#messages{
+    top: 5vh;
+    height: 93vh;
+    overflow-y:auto;
 }

@@ -1,19 +1,15 @@
-import multiprocessing
 import socket
 import threading
 import time
 import tkinter as tk
 from tkinter import messagebox
-from tkinter.simpledialog import askstring
 
-import multiprocessing
 import matplotlib.pyplot as plt
 import numpy as np
-import time
 import serial
 
+from WebSockets import Web_Socket  # ik know there is built in module
 from protocol import Protocol
-from WebSockets import Web_Socket
 
 
 class WebSocket(Web_Socket):
@@ -54,7 +50,9 @@ class Client:
             messagebox.showerror("Error", "Failed to connect to the server")
             return
 
-        DesktopApp(self.socket, self.WebSocket.client_name)
+        ok, res = self.confirm_ip(self.WebSocket.client_name, self.WebSocket.random_str)
+        if ok:
+            DesktopApp(self.socket, self.WebSocket.client_name)
 
     def connect(self):
         try:
@@ -65,14 +63,14 @@ class Client:
             print(f"Failed to connect: {e}")
             return False
 
-    def send_login_details(self, username, password):
+    def confirm_ip(self, username, random_str):
         try:
-            self.socket.send_msg(f"Login:{username},{password}")
+            self.socket.send_msg(f"confirm_ip:{username},{random_str}")
             response = self.socket.get_msg().decode()
-            return response
+            return True, response
         except Exception as e:
             print(f"Error during communication: {e}")
-            return "Error"
+            return "Error", None
 
 
 class DesktopApp:
@@ -81,14 +79,13 @@ class DesktopApp:
         self.socket = _socket
         self.data_write = 0
         self.threads = []
-        self.parent_conn, self.child_conn = multiprocessing.Pipe()
+
         # Tk inter self's
         self.root = tk.Tk()
         self.root.title("12 Grade Project")
         self.root.geometry("450x400")
         self.root.configure(bg="#6b0202")
         self.bpm_label = None
-        # self.run_functionality()
 
         self.additional_bmp_window()
 
@@ -107,17 +104,10 @@ class DesktopApp:
         self.live_plot_init()
         self.root.mainloop()
 
-    @staticmethod
-    def get_ip():
-        # :todo get the server ip
-        ip = None
-        # ip = askstring("IP Address", "Enter the IP address of the server:")
-        return ip
-
     def send_bpm(self, bpm):
         try:
             self.bpm_label.config(text=bpm)
-            self.socket.send_msg("bpm:" + bpm)
+            self.socket.send_msg(f"bpm:{self.username},{bpm}")
         except Exception as e:
             print(e)
 
@@ -363,7 +353,7 @@ class DesktopApp:
                 if response:
                     data = int(response.split(",")[-1])
                     # serW.write(response.encode() + b'\n')
-                    self.parent_conn.send(data)
+                    self.data_write = data
                     if len(last_ten) >= 50:
                         last_ten.pop(0)
                     last_ten.append(data)
@@ -387,23 +377,6 @@ class DesktopApp:
                             ok = True
         finally:
             ser.close()
-
-    def run_functionality(self):
-        self.additional_bmp_window()
-
-        get_bpm_thread = threading.Thread(target=self.mock_heartrate)
-        get_bpm_thread.start()
-        self.threads.append(get_bpm_thread)
-
-        # get_bpm_process = multiprocessing.Process(target=self.mock_heartrate)
-        # get_bpm_process.start()
-
-        # get_bpm_thread = threading.Thread(target=self.get_bpm)
-        # get_bpm_thread.start()
-        # self.threads.append(get_bpm_thread)
-
-        # live_plot_process = multiprocessing.Process(target=self.live_plot, args=(self.child_conn,))
-        # live_plot_process.start()
 
     def live_plot_init(self):
         # Initialize empty lists to store x and y data
@@ -447,44 +420,6 @@ class DesktopApp:
     def live_plot_iter(self):
         self.update_plot()
         self.root.after(10, self.live_plot_iter)
-
-    # @staticmethod
-    # def live_plot(pipe_conn):
-    #     x_data = []
-    #     y_data = []
-    #
-    #     fig, ax = plt.subplots()
-    #     line, = ax.plot([], [], lw=2)
-    #     x_count = 0
-    #     x_max = 60
-    #     ax.set_xlim(x_count, x_max)
-    #
-    #     def update_plot():
-    #         nonlocal x_data, y_data, x_count, x_max
-    #
-    #         while pipe_conn.poll():
-    #             data_point = pipe_conn.recv()
-    #             x_data.append(x_count)
-    #             y_data.append(data_point)
-    #
-    #             if len(x_data) > 60:
-    #                 x_data.pop(0)
-    #                 y_data.pop(0)
-    #
-    #             line.set_data(x_data, y_data)
-    #             x_count += 1
-    #             if x_max - 10 == x_count:
-    #                 x_max += 1
-    #             ax.set_xlim(x_max - 60, x_max)
-    #
-    #             avg_y = np.mean(y_data)
-    #             ax.set_ylim(avg_y - 15, avg_y + 25)
-    #             fig.canvas.draw()
-    #             plt.pause(0.00001)
-    #
-    #     update_plot()
-    #     while True:
-    #         update_plot()
 
     def additional_bmp_window(self):
         logedas = tk.Label(self.root, text="Logged as, " + self.username, font=("Arial", 14), bg="#6b0202", fg="white")

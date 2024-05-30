@@ -3,21 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Include W3.CSS for styling -->
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <!-- Include your custom CSS -->
     <link rel="stylesheet" href="index.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- Include the latest Font Awesome for all icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <title>Chat Application</title>
 </head>
 <body>
-  <h5 id="loged_as">looged in as</h5>
-  <button id="logout" class="button fa fa-sign-out">logout</button>
+  <h5 id="loged_as">logged in as</h5>
+  <select name="dates" id="dates">
+    <option value="Live">Now-Live</option>
+  </select>
+  <button id="logout" class="button">
+    <i class="fa fa-sign-out"></i>
+    logout
+  </button>
   <button id="open_chat" class="button">open chat</button>
   <div id="chat_div" style="display: none;" class="chat_pop_up">
-    <button class= "w3-button w3-circle w3-card-4" id ="add_button">+</button>   
-    <input type="text" id="Search" placeholder="Search">
-    <i id="messages"></i>
+    <div id="chats_container">
+      <button class="w3-button w3-circle w3-card-4" id="add_button">+</button>   
+      <input type="text" id="Search" placeholder="Search">
+      <div id="chats"></div>
+    </div>
+    <div id="in_chat_container" style="display: none;">
+      <button id="back_button" >
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <i id="messages"></i>
+      <div class="send_container">
+        <input type="text" id="message-input" placeholder="Type your message...">
+        <button id="Send">Send</button>
+      </div>
+    </div>
   </div>
   <button id="open_arduino" class="button">start monitor</button>
+  <div class="chart-container">
+    <canvas id="myChart"></canvas>
+    <div class="controls">
+      <button id="prev">Previous</button>
+      <button id="next">Next</button>
+    </div>
+  </div> 
+  
+  <!-- Include your custom JavaScript -->
   <script src="index.js"></script>
 </body>
 </html>

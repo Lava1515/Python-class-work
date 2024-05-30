@@ -1,6 +1,8 @@
 import json
+import random
 import socket
 import threading
+from datetime import date
 
 import serial
 from pymongo.mongo_client import MongoClient
@@ -8,7 +10,7 @@ from pymongo.server_api import ServerApi
 
 import constans
 from protocol import Protocol
-from WebSockets import Web_Socket
+from WebSockets import Web_Socket  # ik know there is built in module
 
 
 class WebServer:
@@ -45,36 +47,33 @@ class WebServer:
                                  + constans.CONTENT_LENGTH + str(len(res_data))
                                  + "\r\n\r\n" + res_data)
             elif 'POST' in method:
+                data = json.loads(data)
                 if "/send_details_Login" in path:
-                    acc = json.loads(data)
-                    result = self.database.accounts_details.find_one({"name": acc["name"].lower()})
+                    result = self.database.accounts_details.find_one({"name": data["name"].lower()})
                     print(result)
                     res_data = json.dumps({"can_login": "false"})
-                    if result is not None and result["password"] == acc["pass"]:
+                    if result is not None and result["password"] == data["pass"]:
                         res_data = json.dumps({"can_login": "true"})
 
                 elif "/send_details_Register" in path:
-                    acc = json.loads(data)
-                    result = self.database.accounts_details.find_one({"name": acc["name"].lower()})
+                    result = self.database.accounts_details.find_one({"name": data["name"].lower()})
                     if result is None:
                         self.database.accounts_details.insert_one(
-                            {"name": acc["name"].lower(), "password": acc["pass"], "Permissions": "Trainer"})
+                            {"name": data["name"].lower(), "password": data["pass"], "Permissions": "Trainer"})
                         res_data = json.dumps({"existing": "false"})
                     else:
                         res_data = json.dumps({"existing": "true"})
 
                 elif "/AdminRegister" in path:
-                    acc = json.loads(data)
-                    all_names = self.database.accounts_details.find_one({"name": acc["name"].lower()})
+                    all_names = self.database.accounts_details.find_one({"name": data["name"].lower()})
                     if all_names is None:
                         self.database.accounts_details.insert_one(
-                            {"name": acc["name"].lower(), "password": acc["pass"], "Permissions": "Coach"})
+                            {"name": data["name"].lower(), "password": data["pass"], "Permissions": "Coach"})
                         res_data = json.dumps({"existing": "false"})
                     else:
                         res_data = json.dumps({"existing": "true"})
 
                 elif "/add_contact" in path:
-                    data = json.loads(data)
                     friend_name = data["data"].lower()
                     current_user_name = data["current_user"].lower()
 
@@ -89,7 +88,7 @@ class WebServer:
                                 res_data = json.dumps({"existing": True})
                             else:
                                 # Add the friend to the user's friends list
-                                self.database.accounts_details.update_one({"name": current_user_name},
+                                self.database.accounts_details.update_one({"name": current_user_name.lower()},
                                                                           {"$push": {"friends": friend_name}})
                                 res_data = json.dumps({"existing": False})
                         else:
@@ -98,13 +97,18 @@ class WebServer:
                         res_data = json.dumps({"error": "Contact not found"})
 
                 elif "/create_group" in path:
-                    # :todo crate group
-                    data = json.loads(data)
-                    print(data)
-                    res_data = json.dumps({"existing": "true"})
+                    chats = self.database.chats.find_one({"name": "CHATS_NAMES_IDS"})
+                    if chats is None:
+                        self.database.chats.insert_one({"name": "CHATS_NAMES_IDS"})
+
+                    id_ = self.get_chat_id(chats)
+                    self.database.chats.update_one({"name": "CHATS_NAMES_IDS"},
+                                                   {"$set": {id_: data["chat_name"]}})
+                    self.database.accounts_details.update_one({"name": data["current_user"].lower()},
+                                                              {"$push": {"chats_ids": id_}})
+                    res_data = json.dumps({"added_successfully": "true"})
 
                 elif "/SetCoach" in path:
-                    data = json.loads(data)
                     coach_name = data["coach"].lower()
                     current_user_name = data["current_user"].lower()
 
@@ -118,11 +122,11 @@ class WebServer:
                             if not user.get("coach"):
                                 # Update current user's coach and add current user to coach's trainers
                                 self.database.accounts_details.update_one(
-                                    {"name": current_user_name},
+                                    {"name": current_user_name.lower()},
                                     {"$set": {"coach": coach_name}}
                                 )
                                 self.database.accounts_details.update_one(
-                                    {"name": coach_name},
+                                    {"name": coach_name.lower()},
                                     {"$push": {"trainers": current_user_name}}
                                 )
                                 res_data = json.dumps({"Added": True})
@@ -134,16 +138,46 @@ class WebServer:
                         res_data = json.dumps({"error": "Coach not found"})
 
                 elif "/get_Permissions" in path:
-                    data = json.loads(data)
                     account = self.database.accounts_details.find_one({"name": data["current_user"].lower()})
                     print(data)
                     res_data = json.dumps({"Permissions": account["Permissions"]})
 
                 elif "/get_trainers" in path:
-                    data = json.loads(data)
                     account = self.database.accounts_details.find_one({"name": data["current_user"].lower()})
                     print(data)
                     res_data = json.dumps({"Trainers": account["trainers"]})
+
+                elif "/get_bpms_dates" in path:
+                    account = self.database.bpms.find_one({"name": data["current_user"].lower()})
+                    try:
+                        dates = list(filter(lambda key: str(key) != "_id" and key != "name", account.keys()))
+                        res_data = json.dumps({"dates": dates})
+                    except AttributeError:
+                        print("no dates saved")
+
+                elif "/get_dates" in path:
+                    print(data, "dates")
+                    account = self.database.bpms.find_one({"name": data["current_user"].lower()})
+                    print(account)
+                    print(account[data["date"]])
+                    res_data = json.dumps({"bpms": account[data["date"]]})
+
+                elif "/get_chats" in path:
+                    chats = {}
+                    all_chats = self.database.chats.find_one({"name": "CHATS_NAMES_IDS"})
+                    user = self.database.accounts_details.find_one({"name": data["current_user"].lower()})
+                    try:
+                        chats_ids = user["chats_ids"]
+                    except KeyError:
+                        chats_ids = []
+                    result_dict = {id_: all_chats[id_] for id_ in chats_ids if id_ in all_chats}
+                    res_data = json.dumps(result_dict)
+
+                elif "/get_chat_data" in path:
+                    chats = {}
+                    chat_data = self.database.chats.find_one({"id": data["id"]})
+                    res_data = json.dumps(chat_data)
+
                 self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
                                  + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
                                  + constans.CONTENT_LENGTH + str(len(res_data))
@@ -155,10 +189,13 @@ class WebServer:
             client_socket.close()
             self.clients.remove(client_socket)
 
-    def update_messages_file(self, chat_id):
-        filename = f'chats_data/{chat_id}_messages.json'
-        with open(filename, 'w') as file:
-            json.dump(self.chats[chat_id], file)
+    @staticmethod
+    def get_chat_id(chats_ids):
+        id_ = str(random.randint(1000000, 10000000))
+        while id_ in chats_ids.keys():
+            print("in chats")
+            id_ = str(random.randint(1000000, 10000000))
+        return id_
 
     @staticmethod
     def send_files(client_socket, path, status_code):
@@ -195,39 +232,13 @@ class WebServer:
             self.server_socket.close()
 
 
-# Function to handle client connections
-# def handle_client_arduino(client_protocol, address):
-#     print(f"[NEW CONNECTION] {address} connected.")
-#
-#     # Echo loop
-#     while True:
-#         try:
-#             # Receive data from the client
-#             data = client_protocol.get_msg()
-#             if not data:
-#                 print(f"[{address}] disconnected.")
-#                 break
-#
-#             print(f"[{address}] {data.decode('utf-8')}")
-#             # todo: update database
-#
-#             # Echo the received data back to the client
-#             client_protocol.send_msg(data)
-#         except ConnectionError:
-#             print(f"[{address}] connection closed unexpectedly.")
-#             break
-#
-#     # Close the connection
-#     client_protocol.close()
-
-
 class Arduino:
     def __init__(self, DataBase, WebSocketInstance):
         self.database = DataBase
         self.WS = WebSocketInstance
         self.protocol = Protocol()
 
-    def start_arduino(self):
+    def start_arduino(self, approved_users):
         # Server configuration
         HOST = '0.0.0.0'
         PORT = 5555
@@ -238,7 +249,7 @@ class Arduino:
             while True:
                 client_socket, addr = self.protocol.accept()
                 print(f"[CONNECTED] Connection from {addr}")
-                client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
+                client_handler = threading.Thread(target=self.handle_client, args=(client_socket, approved_users))
                 client_handler.start()
 
         except KeyboardInterrupt:
@@ -246,31 +257,43 @@ class Arduino:
         finally:
             self.protocol.close()
 
-    def handle_client(self, client_socket):
+    def handle_client(self, client_socket, approved_users):
         while True:
-            try:
-                method, data = client_socket.get_msg().decode().split(":")
-                if "check_user" in method:
-                    print("logi")
-                    username, password = data.split(",")
-                    result = self.database.accounts_details.find_one({"name": username.lower()})
-                    if result is not None and result["password"] == password:
-                        client_socket.send_msg("Success")
-                        print("Success")
-                    else:
-                        client_socket.send_msg("Failure")
-                        print("Failure")
-                elif method == "bpm":
-                    print(data)
-            except Exception as e:
-                print(f"Error handling client: {e}")
-                break
+            # try:
+            method, data = client_socket.get_msg().decode().split(":")
+            if client_socket in approved_users.keys():
+                if method == "bpm":
+                    username, bpm = data.split(",")
+                    today = date.today()
+                    result = self.database.bpms.find_one({"name": username.lower()})
+                    if result is None:
+                        self.database.bpms.insert_one(
+                            {"name": username.lower(), })
+                    self.database.bpms.update_one({"name": username.lower()},
+                                                  {"$push": {str(today): bpm}})
+                    print("Today's date:", today)
+            elif "confirm_ip" in method:
+                print("confirm_ip")
+                print(data)
+                username, random_str = data.split(",")
+                print(random_str, self.WS.randomStr)
+                if random_str in self.WS.randomStr:
+                    client_socket.send_msg("Success")
+                    approved_users[client_socket] = username
+                    print("Success")
+                else:
+                    client_socket.send_msg("Failure")
+                    print("Failure")
+            # except Exception as e:
+            #     print(f"Error handling client: {e}")
+            #     break
 
 
 class WebSocket(Web_Socket):
     def __init__(self):
         super().__init__()
         self.clients = {}
+        self.randomStr = None
 
     def handle_client(self, client_socket, addr):
         self.accept_connection(client_socket)
@@ -283,7 +306,11 @@ class WebSocket(Web_Socket):
                 # if data.split(' ')[0] in self.clients.keys():
                 #     self.send_data(self.clients[data.split(' ')[0]], data)
                 print("Received from client:", data)
-            except Exception:  # there's 3 different exceptions
+                if "random_str" in data:
+                    self.randomStr = data.split(":")[-1]
+                    print("aaaaaaaaa:" + self.randomStr)
+            except Exception as e:  # there's 3 different exceptions
+                print(e)
                 print(f"the client {addr} disconnected")
                 break
 
@@ -307,7 +334,7 @@ class Server:
         self.web_server = WebServer(self.DataBase)
         self.web_socket = WebSocket()
         self.arduino = Arduino(self.DataBase, self.web_socket)
-        self.users = {}
+        self.approved_users = {}
 
     @staticmethod
     def open_database():
@@ -320,7 +347,7 @@ class Server:
     def start_server(self):
         web_thread = threading.Thread(target=self.web_server.start_server, daemon=True)
         websockets_tread = threading.Thread(target=self.web_socket.start_websockets, daemon=True)
-        arduino_thread = threading.Thread(target=self.arduino.start_arduino, daemon=True)
+        arduino_thread = threading.Thread(target=self.arduino.start_arduino, args=(self.approved_users,), daemon=True)
         web_thread.start()
         websockets_tread.start()
         arduino_thread.start()

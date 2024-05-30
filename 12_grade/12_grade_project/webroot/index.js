@@ -9,48 +9,57 @@ const copen_chat = document.getElementById('open_chat');
 const add_button = document.getElementById('add_button');
 const chat_div = document.getElementById("chat_div")
 const open_arduino = document.getElementById("open_arduino")
+const selectElement = document.getElementById("dates")
+
+const ctx = document.getElementById('myChart').getContext('2d');
+const numColumns = 100;
+let startIndex = 0;
+
+// Generate labels from 100 to 1 (assuming numColumns is 100)
+const labels = Array.from({ length: numColumns }, (_, i) => numColumns - i);
+
+let dataList = []
 
 GetPermissions()
-
 logged_as.innerHTML = "looged in as " + currentUsername
+SetDates()
 
-
-async function GetPermissions(){
-    let data = await fetch(`/get_Permissions`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({"current_user": currentUsername})
-    });
-
-    const response = await data.json();
-    console.log(response)
-    if (response["Permissions"] == "Coach"){
-        GetTrainers()
+const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'beats per minute',
+            data: getDataSlice(),
+            backgroundColor: 'rgba(255, 98, 0, 0.65)',
+            borderColor: 'rgba(255, 189, 0, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            x: {
+                reverse: true // Option to reverse the x-axis
+            },
+            y: {
+                beginAtZero: true
+            }
+        }
     }
-}   
-async function GetTrainers(){
-    let data = await fetch(`/get_trainers`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({"current_user": currentUsername})
-    });
+});
 
-    const response = await data.json();
-    console.log(response)
 
-}
 
+selectElement.addEventListener('change', () => {
+    const selectedValue = selectElement.value;
+    console.log('Selected date:', selectedValue);
+    GetDates(selectedValue)
+});
 
 logout.onclick = function(){
     sessionStorage.setItem('username',  null);
     window.location.href = "login.html"
 };
-
-
 
 webSocket.onopen = function(event) {
     console.log("WebSocket connection established.");
@@ -78,12 +87,29 @@ webSocket.onopen = function(event) {
 //     }
 // });
 
-open_arduino.onclick = function(){
-    const LocalWebSocket = new WebSocket('ws://127.0.0.1:8080');
-    const random_str = generateRandomString()
-    console.log(random_str)
-    webSocket.send("random_str: " + random_str)
 
+document.getElementById('next').addEventListener('click', () => {
+    if (startIndex > 0) {
+        startIndex -= 10;
+        updateChart();
+    }
+});
+
+document.getElementById('prev').addEventListener('click', () => {
+    if (startIndex < dataList.length) {
+        startIndex += 10;
+        updateChart();
+    }
+});
+
+
+
+
+open_arduino.onclick = function(){
+    const random_str = generateRandomString()
+    webSocket.send("random_str: " + random_str)
+    const LocalWebSocket = new WebSocket('ws://127.0.0.1:8080');
+    
     LocalWebSocket.onopen = function(event) {
         console.log("WebSocket connection established.");
         LocalWebSocket.send(currentUsername + ip + ":8765" +"//" +  random_str);
@@ -119,6 +145,7 @@ copen_chat.onclick = function(){
             chat_div.style.display = "none";
         }, 1000);
     }
+    getChats()
 }
 
 add_button.onclick = function(){
@@ -156,8 +183,76 @@ add_button.onclick = function(){
     console.log(chat_div.children);
 }
 
+
+//Functions 
+async function GetPermissions(){
+    let data = await fetch(`/get_Permissions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"current_user": currentUsername})
+    });
+
+    const response = await data.json();
+    console.log(response)
+    if (response["Permissions"] == "Coach"){
+        GetTrainers()
+    }
+}   
+async function GetTrainers(){
+    let data = await fetch(`/get_trainers`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"current_user": currentUsername})
+    });
+
+    const response = await data.json();
+    console.log(response)
+
+}
+async function GetBpmsDates(){
+    let data = await fetch(`get_bpms_dates`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"current_user": currentUsername})
+    });
+
+    const response = await data.json();
+    console.log(response)
+    return response
+}
+async function SetDates(){
+    dates = await GetBpmsDates()
+    dates = dates["dates"]
+    console.log(dates)
+    dates.forEach(date => {
+        const newOption = document.createElement('option');
+        newOption.value = date;
+        newOption.text = date;
+        selectElement.appendChild(newOption);
+    });
+}
+async function GetDates(Value){
+    let data = await fetch(`get_dates`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"current_user": currentUsername , "date": Value})
+    });
+    const response = await data.json();
+    dataList = response["bpms"]
+    console.log(dataList)
+    console.log(startIndex)
+    updateChart()
+}
 function generateRandomString(length = 50) {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
     let randomString = '';
     for (let i = 0; i < length; i++) {
         const randomIndex = Math.floor(Math.random() * characters.length);
@@ -165,7 +260,6 @@ function generateRandomString(length = 50) {
     }
     return randomString;
 }
-
 function add_middle_popup(type) {
     // Check if .middle_popup already exists
     dict = {"add_contact": "Contact name" , "create_group": "Group name"}
@@ -194,9 +288,8 @@ function add_middle_popup(type) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({"current_user": currentUsername, 'data': inputValue})
+                body: JSON.stringify({"current_user": currentUsername, 'chat_name': inputValue})
             });
-        
             const response = await data.json();
             console.log(response)
             // Handle response as needed
@@ -208,7 +301,73 @@ function add_middle_popup(type) {
     pop_up.appendChild(submitButton);
     document.body.appendChild(pop_up);
 }
+function getDataSlice() {
+    console.log(dataList.slice(startIndex - numColumns, startIndex))
+    return dataList.reverse().slice(startIndex , startIndex + numColumns);
+}
+function updateChart() {
+    chart.data.datasets[0].data = getDataSlice();
+    chart.update();
+}
+async function getChats(){
+    let data = await fetch(`get_chats`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"current_user": currentUsername})
+    });
+    const response = await data.json();
+    console.log(response)
+    create_chats(response)
+}
+function create_chats(chat_dict) {
+    // Get the element with id "chats"
+    const chats = document.getElementById("chats");
 
+    // Iterate through the keys (chat IDs) in the chat_dict
+    for (const id in chat_dict) {
+        if (chat_dict.hasOwnProperty(id)) {
+            // Get the chat name corresponding to the current ID
+            const chatname = chat_dict[id];
+            // Create a new div element for the chat
+            const chat = document.createElement("div");
+            // Set the inner HTML to the chat name
+            chat.innerHTML = chatname;
+            // Set the class name for styling
+            chat.className = "chat";
+            // Set a unique ID for the chat
+            chat.id = id;
+            // Append the chat element to the chats container
+            chats.appendChild(chat);
+            // Add a click event listener to switch chats
+            chat.addEventListener("click", function() {
+                switch_chat(id); // Pass the id to the switch_chat function
+            });
+        }
+    }
+}
+async function switch_chat(id) {
+    console.log("Switching to chat:", id);
+    const backButton = document.getElementById("back_button");
+    const chats_container = document.getElementById("chats_container")
+    const in_chat_container =  document.getElementById("in_chat_container")
+    in_chat_container.style.display = "block";
+    chats_container.style.display = "none";
+    let data = await fetch(`get_chat_data`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"id": id})
+    });
+    const response = await data.json();
+    console.log(response)
+    backButton.onclick = function(){
+        chats_container.style.display = "block";
+        in_chat_container.style.display = "none";
+    }
+}
 
 // const chatBox = document.getElementById('chat-box');
 // const Send = document.getElementById('Send');
