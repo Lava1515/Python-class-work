@@ -100,9 +100,9 @@ function send_details(method_, name, pass) {
         if(data["can_login"] =="true"){
             sessionStorage.setItem('username', name);
             if (method_ =="Login")
-                window.location.href = "index.html"
+                window.location.href = "webroot/index.html"
             if (method_ =="Register")
-                window.location.href = "ChooseCoach.html"
+                window.location.href = "webroot/ChooseCoach.html"
         }
         else if(data["can_login"] =="false"){
             pop_up.innerHTML = "Username or pasword are not matching"
@@ -115,9 +115,9 @@ function send_details(method_, name, pass) {
         else if (data["existing"] =="false"){
             sessionStorage.setItem('username', name);
             if (method_ =="Login")
-                window.location.href = "index.html"
+                window.location.href = "webroot/index.html"
             if (method_ =="Register")
-                window.location.href = "ChooseCoach.html"
+                window.location.href = "webroot/ChooseCoach.html"
         }
         console.log(data)
         console.log('Message sent successfully:', data);

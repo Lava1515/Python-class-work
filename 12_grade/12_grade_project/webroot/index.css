@@ -39,18 +39,6 @@
     transform: translate(50%, 50%);
 }
 
-.x_btn{
-    position: relative;
-    color: rgba(255, 0, 0, 0.86);
-    background-color: rgba(249, 0, 0, 0);
-    border: 0px;
-    left: 85%;
-}
-
-.x_btn:hover{
-    background-color:rgba(0, 0, 0, 0.153);
-    border-radius: 50%;
-}
 
 .input_chat{
     position: relative;
@@ -149,7 +137,31 @@ body{
     position: absolute;
     border-radius: 15px;
 }
+.chatbuttonslideInFromRight {
+    animation: chatbuttonslideIn 0.75s forwards, fadeIn 0.75s forwards;
+}
 
+.chatbuttonslideOutToRight {
+    animation: chatbuttonslideOut 0.75s forwards, fadeOut 0.75s forwards;
+}
+
+@keyframes chatbuttonslideIn {
+    from {
+        right: 0%; /* Start from outside the screen */
+    }
+    to {
+        right: 30%; /* End at the correct position */
+    }
+}
+
+@keyframes chatbuttonslideOut {
+    from {
+        right: 30%; /* Start from the correct position */
+    }
+    to {
+        right: 0%; /* End outside the screen */
+    }
+}
 .button:hover{
     background-color: rgb(144, 141, 138);
 }
@@ -220,9 +232,8 @@ body{
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: red;
+    background-color: rgb(71, 68, 68);
     width: 200px;
-    height: 200px;
     animation: slideIn_popup 0.75s ease-in-out forwards;
 }
 
@@ -260,7 +271,130 @@ body{
 .chat:hover{
    background-color: #6b6554;
 }
-#messages{
+#messages {
+    position: absolute;
+    top: 7%;
     height: 85vh;
-    overflow-y:auto;
+    width: 100%;
+    overflow-y: auto;
+}
+
+/* Container for each message */
+.message_container {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 60%;
+    background-color: gray;
+    clear: both; /* Ensure messages do not float next to each other */
+    margin-left: auto; /* Align to the right */
+    margin-right: 10px;
+    word-wrap: break-word; /* Ensure long words break and wrap within the container */
+    word-break: break-word; /* Ensure text breaks and wraps within the container */
+}
+
+/* Date and name styles */
+.date {
+    display: block;
+    font-size: 12px;
+    color: rgb(0, 0, 0);
+    text-align: right;
+    margin-top: 5px;
+}
+
+.name {
+    display: block;
+    font-size: 14px;
+    color: #000000;
+    font-weight: bold;
+}
+
+/* Message text */
+.message {
+    color: #ffffff;
+    white-space: normal; /* Ensure text wraps within the container */
+}
+
+/* Container for my messages to align them to the right */
+.MyMessage-container {
+    background-color: #0f491b; /* Change background color */
+    margin-right: auto; /* Align to the right */
+    margin-left: 10px;
+}
+#chat_name{
+    text-align: center;
+}
+#back_button{
+    position: absolute;
+    left:0px;
+}
+.send_container{
+    position: absolute;
+    top: 92vh;
+    height: 8vh;
+    width:  100%;
+    background-color: #484b3b;
+}
+#chat_settings_button{
+    position: absolute;
+    top: 0px;
+}
+.top_container{
+    position: absolute;
+    width: 100%;
+    height: 7%;
+    background-color: #484b3b;
+}
+#back_button{
+    background-color: #484b3b;
+    left: 94.6%;
+}
+#back_button:hover{
+    background-color: #6e725c;
+}
+#message-input{
+    position: relative;
+    height: 65%;
+    width: 60%;
+    top: 20%;
+    left: 15%;
+}
+#Send{
+    position: relative;
+    top: 20%;
+    left: 15%;
+}
+
+.x_btn{
+    position: relative;
+    color: rgba(255, 0, 0, 0.86);
+    background-color: rgba(249, 0, 0, 0);
+    border: 0px;
+    left: 85%;
+}
+
+.x_btn:hover{
+    background-color:rgba(0, 0, 0, 0.153);
+    border-radius: 50%;
+}
+.pop_up_input{
+    width: 100%;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+#searchInput {
+    padding: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#namesSelect {
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
 }

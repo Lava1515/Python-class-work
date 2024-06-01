@@ -2,20 +2,20 @@ import json
 import random
 import socket
 import threading
-from datetime import date
+from datetime import date, datetime
 
-import serial
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
 import constans
-from protocol import Protocol
 from WebSockets import Web_Socket  # ik know there is built in module
+from protocol import Protocol
 
 
 class WebServer:
-    def __init__(self, DataBase):
+    def __init__(self, DataBase, _WebSocket):
         self.database = DataBase
+        self.web_socket = _WebSocket
         self.server_socket = None
         self.chats = {}
         self.clients = set()
@@ -36,7 +36,6 @@ class WebServer:
                 elif "/get_coaches" in path:
                     names = self.database.accounts_details.find({"Permissions": "Coach"})
                     namelist = [name["name"].lower() for name in names]
-                    print(namelist)
                     res_data = json.dumps(namelist)
 
                 elif path != "/" and "?" not in path:
@@ -100,14 +99,15 @@ class WebServer:
                     chats = self.database.chats.find_one({"name": "CHATS_NAMES_IDS"})
                     if chats is None:
                         self.database.chats.insert_one({"name": "CHATS_NAMES_IDS"})
+                        chats = self.database.chats.find_one({"name": "CHATS_NAMES_IDS"})
 
                     id_ = self.get_chat_id(chats)
-                    self.database.chats.insert_one({"id": str(id_)})
+                    self.database.chats.insert_one({"id": str(id_), "accounts":[data["current_user"].lower()]})
                     self.database.chats.update_one({"name": "CHATS_NAMES_IDS"},
                                                    {"$set": {id_: data["chat_name"]}})
                     self.database.accounts_details.update_one({"name": data["current_user"].lower()},
                                                               {"$push": {"chats_ids": id_}})
-                    res_data = json.dumps({"added_successfully": "true"})
+                    res_data = json.dumps({"added_chat": "true", "id": id_})
 
                 elif "/SetCoach" in path:
                     coach_name = data["coach"].lower()
@@ -140,12 +140,10 @@ class WebServer:
 
                 elif "/get_Permissions" in path:
                     account = self.database.accounts_details.find_one({"name": data["current_user"].lower()})
-                    print(data)
                     res_data = json.dumps({"Permissions": account["Permissions"]})
 
                 elif "/get_trainers" in path:
                     account = self.database.accounts_details.find_one({"name": data["current_user"].lower()})
-                    print(data)
                     res_data = json.dumps({"Trainers": account["trainers"]})
 
                 elif "/get_bpms_dates" in path:
@@ -154,14 +152,16 @@ class WebServer:
                         dates = list(filter(lambda key: str(key) != "_id" and key != "name", account.keys()))
                         res_data = json.dumps({"dates": dates})
                     except AttributeError:
+                        res_data = json.dumps({"dates": []})
                         print("no dates saved")
 
-                elif "/get_dates" in path:
-                    print(data, "dates")
+                elif "/get_date_bpms" in path:
+                    print(data)
                     account = self.database.bpms.find_one({"name": data["current_user"].lower()})
-                    print(account)
-                    print(account[data["date"]])
-                    res_data = json.dumps({"bpms": account[data["date"]]})
+                    try:
+                        res_data = json.dumps({"bpms": account[data["date"]]})
+                    except KeyError:
+                        res_data = json.dumps({"bpms": []})
 
                 elif "/get_chats" in path:
                     chats = {}
@@ -174,24 +174,42 @@ class WebServer:
                     result_dict = {id_: all_chats[id_] for id_ in chats_ids if id_ in all_chats}
                     res_data = json.dumps(result_dict)
 
-                elif "/get_chat_data" in path:
-                    chats = {}
-                    chat_data = self.database.chats.find_one({"id": data["id"]})
-                    res_data = json.dumps(chat_data)
-
                 elif "/send_message" in path:
+                    print(self.web_socket.clients)
                     chat = self.database.chats.find_one({"id": data["id"]})
                     if chat:
                         # Update the chat document with the new field
+                        now = datetime.now()
+                        # Format the time to include milliseconds
+                        formatted_time = now.strftime("%Y-%m-%d %H;%M;%S;%f")[:-3]
                         self.database.chats.update_one(
                             {"id": data["id"]},
-                            {"$set": {data["message"]: data["current_user"]}}
+                            {"$set": {str(formatted_time): f'{data["message"]}|{data["current_user"]}'}}
                         )
                         res_data = json.dumps({"sent": "true"})
 
                 elif "/get_messages" in path:
                     chat = self.database.chats.find_one({"id": data["id"]})
-                    print(chat)
+                    items = list(chat.items())
+                    filtered_items = items[3:]
+                    # Convert the filtered items back to a dictionary
+                    chat = dict(filtered_items)
+                    res_data = json.dumps(chat)
+
+                elif "/get_contacts" in path:
+                    account = self.database.accounts_details.find_one({"name": data["current_user"].lower()})
+                    res_data = json.dumps({"names": account["friends"]})
+
+                elif "/add_chat_for_contact" in path:
+                    check = self.database.chats.find_one({"id": str(data["chat_id"])})
+                    if data["contact_name"] not in check["accounts"]:
+                        self.database.chats.update_one({"id": str(data["chat_id"])},
+                                                       {"$push": {"accounts": data["contact_name"]}})
+                        res_data = json.dumps({"added": "true"})
+                        self.database.accounts_details.update_one({"name": data["contact_name"].lower()},
+                                                                  {"$push": {"chats_ids": data["chat_id"]}})
+                    else:
+                        res_data = json.dumps({"already_in": "true"})
 
                 self.response = (constans.HTTP + constans.STATUS_CODES["ok"]
                                  + constans.CONTENT_TYPE + constans.FILE_TYPE["json"]
@@ -208,16 +226,14 @@ class WebServer:
     def get_chat_id(chats_ids):
         id_ = str(random.randint(1000000, 10000000))
         while id_ in chats_ids.keys():
-            print("in chats")
             id_ = str(random.randint(1000000, 10000000))
         return id_
 
     @staticmethod
     def send_files(client_socket, path, status_code):
         type_ = path.split(".")[-1]
-        path = "webroot/" + path
         try:
-            with open(path, 'rb') as file:
+            with open(path[1:], 'rb') as file:
                 content = file.read()
                 content_type = constans.CONTENT_TYPE + constans.FILE_TYPE[type_]
                 content_length = constans.CONTENT_LENGTH + str(len(content)) + "\r\n"
@@ -299,9 +315,6 @@ class Arduino:
                 else:
                     client_socket.send_msg("Failure")
                     print("Failure")
-            # except Exception as e:
-            #     print(f"Error handling client: {e}")
-            #     break
 
 
 class WebSocket(Web_Socket):
@@ -314,7 +327,6 @@ class WebSocket(Web_Socket):
         self.accept_connection(client_socket)
         client_name = self.receive_data(client_socket)
         self.clients[client_name] = client_socket
-        print(self.clients)
         while True:
             try:
                 data = self.receive_data(client_socket)
@@ -323,10 +335,12 @@ class WebSocket(Web_Socket):
                 print("Received from client:", data)
                 if "random_str" in data:
                     self.randomStr = data.split(":")[-1]
-                    print("aaaaaaaaa:" + self.randomStr)
             except Exception as e:  # there's 3 different exceptions
                 print(e)
                 print(f"the client {addr} disconnected")
+                keys_to_remove = [k for k, v in self.clients.items() if v == client_socket]
+                for key in keys_to_remove:
+                    del self.clients[key]
                 break
 
     def start_websockets(self):
@@ -346,8 +360,8 @@ class WebSocket(Web_Socket):
 class Server:
     def __init__(self):
         self.DataBase = self.open_database()
-        self.web_server = WebServer(self.DataBase)
         self.web_socket = WebSocket()
+        self.web_server = WebServer(self.DataBase, self.web_socket)
         self.arduino = Arduino(self.DataBase, self.web_socket)
         self.approved_users = {}
 
