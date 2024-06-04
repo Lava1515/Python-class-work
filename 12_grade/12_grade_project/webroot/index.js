@@ -4,19 +4,22 @@ const webSocket = new WebSocket("ws:" + ip + ":8765")
 console.log("ws:" + ip + ":8765")
 const currentUsername = sessionStorage.getItem('username')
 let target_username = currentUsername;
+let LocalWebSocket = null
 const copen_chat = document.getElementById('open_chat')
+const open_arduino = document.getElementById("open_arduino")
 const chat_div = document.getElementById("chat_div")
 const selectElement = document.getElementById("dates")
 const trainers_select = document.getElementById("trainers_select")
 const the_chat = document.getElementById("messages")
 const ctx = document.getElementById('myChart').getContext('2d');
+let is_live = true
 const numColumns = 100;
 let startIndex = 0;
 let currentChatId = "";
 
 // Generate labels from 100 to 1 (assuming numColumns is 100)
 const labels = Array.from({ length: numColumns }, (_, i) => numColumns - i);
-
+let = live_datalist = []
 let dataList = []
 
 GetPermissions()
@@ -51,6 +54,12 @@ const chart = new Chart(ctx, {
 
 selectElement.addEventListener('change', () => {
     const selectedValue = selectElement.value;
+    if(selectedValue == "Live"){
+        is_live = true
+    }
+    else{
+        is_live = false
+    }
     console.log('Selected date:', selectedValue);
     startIndex = 0;
     get_date_bpms(selectedValue)
@@ -75,26 +84,18 @@ webSocket.onopen = function(event) {
     webSocket.send(currentUsername);
 };
 
-// webSocket.onmessage = function(event) {
-//     const messageDiv = document.createElement("div");
-//     messageDiv.textContent = event.data;
-//     console.log(messageDiv.textContent )
-//     document.getElementById("messages").appendChild(messageDiv);
-// };
-
-// function sendMessage(sendto) {
-//     const messageInput = document.getElementById("messageInput");
-//     const message = {"FromUser":currentUsername, "SendTo": sendto , "message": messageInput.value}
-//     webSocket.send(message);
-//     messageInput.value = "";
-// }
-
-// // Add event listener for Enter key press
-// document.getElementById("messageInput").addEventListener("keypress", function(event) {
-//     if (event.key === "Enter") {
-//         sendMessage();
-//     }
-// });
+webSocket.onmessage = function(event) {
+    res = event.data
+    console.log(res)
+    _data_list = res.split("|")
+    console.log(_data_list)
+    _chat_id = _data_list[1].split(":")[1]
+    _name = _data_list[2].split(":")[1]
+    msg = _data_list[3].split(":")[1]
+    if (currentChatId == _chat_id){
+        create_message(msg, _name, get_time())
+    }
+};
 
 
 document.getElementById('next').addEventListener('click', () => {
@@ -161,7 +162,7 @@ document.getElementById("Send").onclick = async function(){
     console.log(currentChatId)
     console.log(message.value)
     create_message(message.value, currentUsername, get_time())
-    let data = await fetch(`send_message`, {
+    let data = await fetch(`/send_message`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -172,19 +173,43 @@ document.getElementById("Send").onclick = async function(){
     console.log(response)
 }
 
-document.getElementById("open_arduino").onclick = function(){
+open_arduino.onclick = function(){
+    if(LocalWebSocket == null){
+        LocalWebSocket = new WebSocket('ws://127.0.0.1:8080');
+    }
+
+    if(open_arduino.innerHTML =="close monitor"){
+        open_arduino.innerHTML = "start monitor"
+        LocalWebSocket.send("close");
+        location.reload();
+    }
     const random_str = generateRandomString()
     webSocket.send("random_str: " + random_str)
-    const LocalWebSocket = new WebSocket('ws://127.0.0.1:8080');
 
     LocalWebSocket.onopen = function(event) {
         console.log("WebSocket connection established.");
         LocalWebSocket.send(currentUsername + ip + ":8765" +"//" +  random_str);
-
+        open_arduino.innerHTML = "close monitor"
     };
     
     LocalWebSocket.onmessage = function(event) {
-        console.log(event.data);
+        let _data = event.data
+        let method = _data.split(":")[0]
+        let params = _data.split(":")[1]
+        if(method == "bpm"){
+            let _name = params.split(",")[0]
+            let bpm = params.split(",")[1]
+            if (live_datalist.length === 1000) {
+                live_datalist.shift();
+            }
+            live_datalist.push(bpm);
+            if(is_live){
+                console.log(dataList)
+                console.log(live_datalist)
+                dataList = live_datalist.reverse()
+                updateChart()
+            }
+        }
     };
     LocalWebSocket.onerror = function(event) {
         alert('Couldnt connect to Arduino');
@@ -192,6 +217,7 @@ document.getElementById("open_arduino").onclick = function(){
 }
 
 copen_chat.onclick = function(){
+    
     const existingPopup = document.querySelector('.middle_popup');
     // If it exists, remove it
     if(existingPopup) {
@@ -283,7 +309,7 @@ async function GetTrainers(){
     return response["Trainers"];
 }
 async function GetBpmsDates(){
-    let data = await fetch(`get_bpms_dates`, {
+    let data = await fetch(`/get_bpms_dates`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -308,19 +334,28 @@ async function SetDates(){
     });
 }
 async function get_date_bpms(Value){
-    let data = await fetch(`get_date_bpms`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({"current_user": target_username , "date": Value})
-    });
-    console.log(data)
-    const response = await data.json();
-    dataList = response["bpms"]
-    updateChart()
-    console.log(dataList)
-    console.log(startIndex)
+    console.log(Value)
+    if(Value =="Live"){   
+        setTimeout(function(){
+            console.log(live_datalist)
+            dataList = live_datalist.reverse()
+            updateChart()
+        }, 20);
+    }
+    else{
+        let data = await fetch(`/get_date_bpms`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({"current_user": target_username , "date": Value})
+        });
+        console.log(data)
+        const response = await data.json();
+        dataList = response["bpms"]
+        updateChart()
+    }
+   
 }
 function generateRandomString(length = 50) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
@@ -353,7 +388,7 @@ function add_middle_popup(type) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({"current_user": currentUsername, 'chat_name': inputValue})
+                body: JSON.stringify({"current_user": currentUsername, 'data': inputValue})
             });
             const response = await data.json();
             console.log(response)
@@ -400,11 +435,17 @@ function getDataSlice() {
     return dataList.reverse().slice(startIndex , startIndex + numColumns);
 }
 function updateChart() {
-    chart.data.datasets[0].data = getDataSlice();
-    chart.update();
+    if(is_live){
+        chart.data.datasets[0].data = getDataSlice().reverse();
+        chart.update();
+    }
+    else{
+        chart.data.datasets[0].data = getDataSlice();
+        chart.update();
+    }
 }
 async function getChats(){
-    let data = await fetch(`get_chats`, {
+    let data = await fetch(`/get_chats`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -463,7 +504,7 @@ async function switch_chat(id) {
     }
 }
 async function get_messages(){
-    let data = await fetch(`get_messages`, {
+    let data = await fetch(`/get_messages`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -507,11 +548,11 @@ function create_message(msg, name, _date){
     
     date.innerHTML = _date;
     date.className = "date";
-    name_.innerHTML = name;
+    name_.innerHTML = name.toLowerCase();
     name_.className = "name";
     
-    console.log(name);
-    if (name == currentUsername){
+    console.log(name.toLowerCase());
+    if (name.toLowerCase() == currentUsername.toLowerCase()){
         message_container.classList.add("MyMessage-container"); // Add class for current user messages
     }
     the_chat.appendChild(message_container);
@@ -542,7 +583,7 @@ function get_time(){
 }
 // Function to get contacts
 async function get_contacts(){
-    let data = await fetch('get_contacts', {
+    let data = await fetch('/get_contacts', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -592,18 +633,21 @@ async function createDropdown(pop_up) {
 
 // Function to populate the select element with names
 function populateSelect(names, select, submit) {
+    console.log(names)
     names.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.text = name;
-        select.appendChild(option);
+        if(name != currentUsername){
+            const option = document.createElement('option');
+            option.value = name;
+            option.text = name;
+            select.appendChild(option);
 
-        // Attach click event to option to set up submit button's functionality
-        option.onclick = function() {
+            // Attach click event to option to set up submit button's functionality
+            option.onclick = function() {
             submit.onclick = function() {
                 add_chat_for_contact(name)
             };
         };
+        }
     });
 }
 
@@ -625,7 +669,7 @@ function filterNames() {
 }
 
 async function add_chat_for_contact(name){
-    let data = await fetch('add_chat_for_contact', {
+    let data = await fetch('/add_chat_for_contact', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

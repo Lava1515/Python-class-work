@@ -12,29 +12,7 @@ from WebSockets import Web_Socket  # ik know there is built in module
 from protocol import Protocol
 
 
-class WebSocket(Web_Socket):
-    def __init__(self):
-        super().__init__()
-        self.client_name = None
-        self.ip = None
-        self.random_str = None
-
-    def handle_client(self, client_socket):
-        self.accept_connection(client_socket)
-        self.client_name, self.ip, self.random_str = self.receive_data(client_socket).split("//")
-        print(self.client_name, self.ip, self.random_str)
-
-    def start_websockets(self):
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.bind(('0.0.0.0', 8080))
-        server_socket.listen()
-
-        print("WebSocket server running on port 8080")
-        # accept only one client cus its only lookback
-        client_socket, addr = server_socket.accept()
-        print(f"Connection from {addr}")
-        self.handle_client(client_socket)
-        return client_socket
+run_ = True
 
 
 class Client:
@@ -42,7 +20,6 @@ class Client:
         self.host = "127.0.0.1"
         self.port = 5555
         self.socket = Protocol()
-
         self.WebSocket = WebSocket()
         self.client_socket = self.WebSocket.start_websockets()
         if not self.connect():
@@ -52,7 +29,7 @@ class Client:
 
         ok, res = self.confirm_ip(self.WebSocket.client_name, self.WebSocket.random_str)
         if ok:
-            DesktopApp(self.socket, self.WebSocket.client_name)
+            DesktopApp(self.socket, self.WebSocket)
 
     def connect(self):
         try:
@@ -73,13 +50,54 @@ class Client:
             return "Error", None
 
 
+class WebSocket(Web_Socket):
+    def __init__(self):
+        super().__init__()
+        self.client_name = None
+        self.ip = None
+        self.random_str = None
+        self.client_socket = None
+
+    def handle_client(self, client_socket):
+        self.accept_connection(client_socket)
+        self.client_name, self.ip, self.random_str = self.receive_data(client_socket).split("//")
+        print(self.client_name, self.ip, self.random_str)
+
+    def start_websockets(self):
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind(('0.0.0.0', 8080))
+        server_socket.listen()
+
+        print("WebSocket server running on port 8080")
+        # accept only one client cus its only lookback
+        self.client_socket, addr = server_socket.accept()
+        print(f"Connection from {addr}")
+        self.handle_client(self.client_socket)
+        t = threading.Thread(target=self.queting_)
+        t.start()
+
+        return self.client_socket
+
+    def queting_(self):
+        while True:
+            data = self.receive_data(self.client_socket)
+            if data == "close":
+                global run_
+                run_ = False
+                quit()
+
+
 class DesktopApp:
-    def __init__(self, _socket, username):
-        self.username = username
+    def __init__(self, _socket, _WebSocket):
+        self._WebSocket = _WebSocket
+        self.username = self._WebSocket.client_name
         self.socket = _socket
         self.data_write = 0
         self.threads = []
 
+        t = threading.Thread(target=self.on_closing)
+        t.start()
+        self.threads.append(t)
         # Tk inter self's
         self.root = tk.Tk()
         self.root.title("12 Grade Project")
@@ -105,13 +123,12 @@ class DesktopApp:
         self.root.mainloop()
 
     def send_bpm(self, bpm):
-        try:
-            self.bpm_label.config(text=bpm)
-            self.socket.send_msg(f"bpm:{self.username},{bpm}")
-        except Exception as e:
-            print(e)
+        self.bpm_label.config(text=bpm)
+        self.socket.send_msg(f"bpm:{self.username},{bpm}")
+        self._WebSocket.send_data(self._WebSocket.client_socket, f"bpm:{self.username},{bpm}")
 
     def mock_heartrate(self):
+        global run_
         heartrate = ['365', '369', '370', '365', '358', '351', '344', '340', '343', '345', '350', '357', '365', '369',
                      '370',
                      '365', '358', '351', '344', '340', '343', '345', '350', '357', '365', '369', '370', '365', '358',
@@ -308,7 +325,7 @@ class DesktopApp:
         i = 0
         count = 0
         ok = True
-        while True:
+        while run_:
             data = int(heartrate[i])
             self.data_write = data
             # self.parent_conn.send(data)
@@ -339,6 +356,7 @@ class DesktopApp:
             time.sleep(0.02)
 
     def get_bpm(self):
+        global run_
         # serW = serial.Serial("COM4", 115200, timeout=1)
         ser = serial.Serial("COM5", 115200, timeout=1)
         avg_bmps = []
@@ -348,7 +366,7 @@ class DesktopApp:
         now = time.perf_counter()
         then = now
         try:
-            while True:
+            while run_:
                 response = ser.readline().decode("utf-8").strip()
                 if response:
                     data = int(response.split(",")[-1])
@@ -418,8 +436,12 @@ class DesktopApp:
         plt.pause(0.00001)
 
     def live_plot_iter(self):
-        self.update_plot()
-        self.root.after(10, self.live_plot_iter)
+        global run_
+        if run_:
+            self.update_plot()
+            self.root.after(10, self.live_plot_iter)
+        else:
+            quit()
 
     def additional_bmp_window(self):
         logedas = tk.Label(self.root, text="Logged as, " + self.username, font=("Arial", 14), bg="#6b0202", fg="white")
@@ -430,7 +452,16 @@ class DesktopApp:
         self.bpm_label.pack(pady=5)
 
     def on_closing(self):
-        # Handle any cleanup here
+        global run_
+        while True:
+            print(run_)
+            if not run_:
+                # Handle any cleanup here
+                print("closeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+                self.close_()
+            time.sleep(0.5)
+
+    def close_(self):
         for thread in self.threads:
             if thread.is_alive():
                 thread.join()  # Adjust the timeout as needed

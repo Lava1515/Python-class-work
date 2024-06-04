@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client</title>
+</head>
+<body>
+    <h1>WebSocket Client</h1>
+    <p id="status">Connecting...</p>
+    <p id="messages"></p>
+    <input type="text" id="messageInput" placeholder="Type a message">
+    <button id="sendButton">Send</button>
+
+    <script>
+        const statusElement = document.getElementById('status');
+        const messagesElement = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        const ws = new WebSocket('ws://localhost:8765');
+
+        ws.onopen = () => {
+            statusElement.textContent = 'Connected to the server';
+            console.log('Connected to the server');
+        };
+
+        ws.onmessage = (event) => {
+            const message = document.createElement('div');
+            message.textContent = 'Received: ' + event.data;
+            messagesElement.appendChild(message);
+            console.log('Received message from server:', event.data);
+        };
+
+        ws.onclose = () => {
+            statusElement.textContent = 'Disconnected from the server';
+            console.log('Disconnected from the server');
+        };
+
+        ws.onerror = (error) => {
+            statusElement.textContent = 'WebSocket error';
+            console.error('WebSocket error:', error);
+        };
+
+        sendButton.onclick = () => {
+            const message = messageInput.value;
+            if (message) {
+                ws.send(message);
+                const sentMessage = document.createElement('div');
+                sentMessage.textContent = 'Sent: ' + message;
+                messagesElement.appendChild(sentMessage);
+                messageInput.value = '';
+            }
+        };
+    </script>
+</body>
+</html>

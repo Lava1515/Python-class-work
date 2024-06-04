@@ -86,7 +86,7 @@ function send_details(method_, name, pass) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 'name': name, 'pass': pass })
+        body: JSON.stringify({'name': name, 'pass': pass})
     })
     .then(response => {
         if (!response.ok) {
@@ -100,9 +100,9 @@ function send_details(method_, name, pass) {
         if(data["can_login"] =="true"){
             sessionStorage.setItem('username', name);
             if (method_ =="Login")
-                window.location.href = "webroot/index.html"
+                window.location.href = "/index.html"
             if (method_ =="Register")
-                window.location.href = "webroot/ChooseCoach.html"
+                window.location.href = "/ChooseCoach.html"
         }
         else if(data["can_login"] =="false"){
             pop_up.innerHTML = "Username or pasword are not matching"
@@ -115,9 +115,9 @@ function send_details(method_, name, pass) {
         else if (data["existing"] =="false"){
             sessionStorage.setItem('username', name);
             if (method_ =="Login")
-                window.location.href = "webroot/index.html"
+                window.location.href = "/index.html"
             if (method_ =="Register")
-                window.location.href = "webroot/ChooseCoach.html"
+                window.location.href = "/ChooseCoach.html"
         }
         console.log(data)
         console.log('Message sent successfully:', data);

@@ -1,4 +1,5 @@
 import json
+import os
 import socket
 import threading
 from collections import defaultdict
@@ -10,6 +11,7 @@ from typing import Callable, Dict, DefaultDict
 
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
+from WebSockets import Web_Socket
 
 import constans
 
@@ -52,17 +54,20 @@ class WebServer:
         self.server_socket = None
         self._mapping: DefaultDict[str, Dict[str, Callable]] = defaultdict(dict)
         self._folder_mappings: Dict[str, Callable] = {}
+        self.web_socket = None
 
     def run(self, client_socket):
         try:
             client_request = client_socket.recv(1024).decode()
             data = client_request.split("\r\n\r\n")[-1]
             method, path, *_ = client_request.split()
-
             if not path:
                 path = "/"
+            if self.file_exists_in_directory("/webroot", path):
+                path = f"/webroot/{path}"
 
             handler: Callable = self._mapping.get(method.upper(), {}).get(path, None)
+
             if not handler:
                 for mounted_folder, folder_handler in self._folder_mappings.items():
                     if path.startswith(mounted_folder):
@@ -80,7 +85,9 @@ class WebServer:
             args = [data]
             handler_signature = signature(handler).parameters
             for parameter, param_type in list(handler_signature.items())[1:]:
-                if param_type.annotation == Response:
+                if param_type.annotation == Web_Socket:
+                    args.append(self.web_socket)
+                elif param_type.annotation == Response:
                     args.append(response)
                 elif param_type.annotation == Request:
                     args.append(request)
@@ -127,7 +134,17 @@ class WebServer:
 
         return wrapper
 
-    def start_server(self):
+    @staticmethod
+    def file_exists_in_directory(directory, filename):
+        # Ensure the filename does not start with a slash
+        filename = filename.lstrip('/')
+        # Join the directory and filename, then replace backslashes with forward slashes
+        file_path = "."+os.path.join(directory, filename).replace('\\', '/')
+
+        return os.path.isfile(file_path)
+
+    def start_server(self, web_socket):
+        self.web_socket = web_socket
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('0.0.0.0', 5000))
         self.server_socket.listen(5)
@@ -160,9 +177,7 @@ def get_web_files(data, response: Response, request: Request):
     if not path.exists():
         response.STATUS_CODE = constans.STATUS_CODES["not found"]
         return ""
-
     response.CONTENT_TYPE = constans.FILE_TYPE[path.suffix[1:]]
-
     return path.read_bytes()
 
 
@@ -216,7 +231,6 @@ def admin_register(data, response: Response, database: get_database):
 @web_server.post("/add_contact")
 def add_contact(data, response: Response, database: get_database):
     data = json.loads(data)
-    print(data)
     friend_name = data["data"].lower()
     current_user_name = data["current_user"].lower()
 
@@ -251,12 +265,12 @@ def create_group(data, response: Response, database: get_database):
         chats = database.chats.find_one({"name": "CHATS_NAMES_IDS"})
 
     id_ = len(chats)  # Dummy function to simulate chat ID generation
-    database.chats.insert_one({"id": str(id_), "accounts": [data["current_user"].lower()]})
+    database.chats.insert_one({"id": str(id_), "accounts": [data["data"].lower()]})
     database.chats.update_one({"name": "CHATS_NAMES_IDS"},
-                              {"$set": {id_: data["chat_name"]}})
+                              {"$set": {str(id_): data["data"]}})
     database.accounts_details.update_one({"name": data["current_user"].lower()},
-                                         {"$push": {"chats_ids": id_}})
-    res_data = json.dumps({"added_chat": "true", "id": id_})
+                                         {"$push": {"chats_ids": str(id_)}})
+    res_data = json.dumps({"added_chat": "true", "id": str(id_)})
     response.CONTENT_TYPE = constans.FILE_TYPE["json"]
     return res_data
 
@@ -356,18 +370,24 @@ def get_chats(data, response: Response, database: get_database):
 
 
 @web_server.post("/send_message")
-def send_message(data, response: Response, database: get_database):
+def send_message(data, WebSoket: Web_Socket, response: Response, database: get_database):
     res_data = ""
     data = json.loads(data)
     chat = database.chats.find_one({"id": data["id"]})
     if chat:
+        users_in_chat_id = chat["accounts"]
+        for user in users_in_chat_id:
+            if user in WebSoket.clients.keys() and user != data["current_user"].lower():
+                WebSoket.send_data(WebSoket.clients[user],
+                                   f"Got message|msg_id:{data["id"]}|sender_name:{data["current_user"].lower()}|msg_data:{data["message"]}")
+
         # Update the chat document with the new field
         now = datetime.now()
         # Format the time to include milliseconds
         formatted_time = now.strftime("%Y-%m-%d %H;%M;%S;%f")[:-3]
         database.chats.update_one(
             {"id": data["id"]},
-            {"$set": {str(formatted_time): f'{data["message"]}|{data["current_user"]}'}}
+            {"$set": {str(formatted_time): f'{data["message"]}|{data["current_user"].lower()}'}}
         )
         res_data = json.dumps({"sent": "true"})
     response.CONTENT_TYPE = constans.FILE_TYPE["json"]
@@ -414,4 +434,3 @@ def add_chat_for_contact(data, response: Response, database: get_database):
     return res_data
 
 
-web_server.start_server()
